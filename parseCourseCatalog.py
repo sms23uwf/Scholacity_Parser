@@ -271,6 +271,64 @@ def GetAssociatedCourse(candidate):
     nullCourse.setTitle = "No Match"
     return nullCourse    
     
+
+def writePOSBreakdown(ws):
+    
+    
+    
+    #taggedCol = 0
+    #taggedRow += 1
+    #ws.write(taggedRow, taggedCol, course.getKnowledgeArea())
+    #taggedCol += 1
+    #ws.write(taggedRow, taggedCol, course.getTitle())
+    #taggedCol += 1
+    #ws.write(taggedRow, taggedCol, course.getDescription())
+    #taggedCol += 1
+
+    global coursesWithDescriptions
+    global default_format
+    global description_format
+    
+    taggedRow = 0
+    taggedCol = 0
+    
+    row = 0
+    col = 0
+    ws.write(row, col, 'Knowledge Area')
+    col += 1
+    ws.write(row, col, 'Course Title')
+    col += 1
+    ws.write(row, col, 'Description')
+    
+
+    for course in coursesWithDescriptions:
+        blob = TextBlob(course.getDescription())
+        for sentence in blob.sentences:
+            #print(sentence)
+            for word, pos in sentence.tags:
+                
+                if constant.BLOOM_ACTION_WORDS.count(word) >= 1:
+                    print(sentence)
+                    print({"word: {}, pos: {}, startswith V: {}".format(word, pos, pos.startswith("V"))})
+                    col = 0
+                    row += 1
+                    ws.write(row, col, "word: {}".format(word))
+                    col += 1
+                    ws.write(row, col, "pos: {}".format(pos))
+                    col += 1
+                    ws.write(row, col, "startswith V: {}".format(pos.startswith("V")))
+                    col += 1
+                    ws.write(row,col,str(sentence))
+                    col += 1
+                    break
+                    
+    ws.set_column(0, 0, 35, default_format)
+    ws.set_column(1, 1, 50, default_format)
+    ws.set_column(2, 2, 120, description_format)
+    ws.set_column(3, 3, 120, description_format)
+
+    
+
 def writeLearningOutcomes(ws):
     # load each course description into blob and get the sentences
     # tag parts of speech in each sentence
@@ -281,6 +339,9 @@ def writeLearningOutcomes(ws):
     global description_format
     
     posFile = "taggedwords.csv"
+    
+    taggedRow = 0
+    taggedCol = 0
     
     row = 0
     col = 0
@@ -439,6 +500,10 @@ wsCourseDescriptions.name = "Course Descriptions"
 wsLearningOutcomes = workbook.add_worksheet()
 wsLearningOutcomes.name = "Stated Learning Outcomes"
 
+wsPOSBreakdown = workbook.add_worksheet()
+wsPOSBreakdown.name = "parts of speech"
+
+
 default_format = workbook.add_format({'valign':'top'})
 description_format = workbook.add_format({'text_wrap':'true', 'valign':'top'})
 
@@ -446,6 +511,7 @@ writeKnowledgeAreas(wsKnowledgeAreas)
 writeCourses(wsCourses)
 writeCoursesWithDescriptions(wsCourseDescriptions)
 writeLearningOutcomes(wsLearningOutcomes)
+writePOSBreakdown(wsPOSBreakdown)
 
 workbook.close()
 
