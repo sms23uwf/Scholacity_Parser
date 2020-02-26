@@ -21,7 +21,7 @@ class KnowledgeArea:
         return self._text
     
     def setText(self, text):
-        self.(_text) = text
+        self._text = text
 
         
   

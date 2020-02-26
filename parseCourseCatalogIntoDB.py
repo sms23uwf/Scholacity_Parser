@@ -11,6 +11,7 @@ import constant
 from docx import Document
 from textblob import TextBlob
 from course import Course
+from knowledgearea import KnowledgeArea
 import string
 from paragraph import Paragraph
 import nltk
@@ -18,7 +19,7 @@ from nltk.stem.porter import PorterStemmer
 from firebase import firebase
 
 
-def ParagraphIsKnowledgeArea(p, lastPos, pText):
+def ParagraphIsKnowledgeArea(p, i, lastPos, pText, firstPositionOfCKA):
     # make the determination that the content of a paragraph consists of a Knowledge Area
     if p.style.name == constant.STYLE_KNOWLEDGEAREA and pText.strip() and pText[lastPos-1].isdigit():
         pPrev = document.paragraphs[i - 1]
@@ -54,7 +55,7 @@ def ExtractKnowledgeAreas(firebase, document, knowledgeAreas):
         lastPos = len(pText)
         kaText = ""
         
-        isKnowledgeArea, kaText = ParagraphIsKnowledgeArea(p, lastPos, pText,firstPositionOfCKA)
+        isKnowledgeArea, kaText = ParagraphIsKnowledgeArea(p, i, lastPos, pText,firstPositionOfCKA)
         
         if isKnowledgeArea:
             knowledgeArea = KnowledgeArea()
@@ -66,7 +67,7 @@ def ExtractKnowledgeAreas(firebase, document, knowledgeAreas):
         if firstPositionOfCKA > 0 and diff > 120:
             break;            
                 
-    for knowledgeArea in KnowledgeAreas:
+    for knowledgeArea in knowledgeAreas:
         newKnowledgeArea = {
             'Content':knowledgeArea.getText()    
         }
@@ -263,8 +264,7 @@ def ExtractLearningOutcomes(firebase, document, courses):
     
     for course in courses:
         
-        firstRowInCourse = row
-        
+       
         blob = TextBlob(course.getDescription())
         for sentence in blob.sentences:
             isLO, candidateLO = SentenceIsLO(sentence)
