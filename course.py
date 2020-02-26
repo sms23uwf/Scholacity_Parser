@@ -3,16 +3,31 @@
 """
 Created on Mon Jan 20 10:22:25 2020
 
-@author: claudiasatterfield
+@author: Steve Satterfield
 """
         
 class Course:
     def __init__(self):
+        self._id = ""
+        self._knowledgeAreaId = ""
         self._knowledgearea = ""
         self._title = ""
         self._tocEntry = ""
         self._description = ""
         
+    def getId(self):
+        return self._id
+    
+    def setId(self, id):
+        self._id = id
+        
+    def getKnowledgeAreaId(self):
+        return self._id
+    
+    def setKnowledgeAreaId(self, knowledgeAreaId):
+        self._knowledgeAreaId = knowledgeAreaId
+        
+    
     def getKnowledgeArea(self):
         return self._knowledgearea
     

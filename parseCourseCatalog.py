@@ -16,6 +16,10 @@ from paragraph import Paragraph
 import re
 import xlsxwriter
 import nltk
+from nltk.stem.porter import PorterStemmer
+from firebase import firebase
+
+firebase = firebase.FirebaseApplication('https://scholacity-org.firebaseapp.com/')
         
 knowledgeAreas = []
 
@@ -289,43 +293,63 @@ def writePOSBreakdown(ws):
     global default_format
     global description_format
     
+    porter = PorterStemmer()
+    
     taggedRow = 0
     taggedCol = 0
     
     row = 0
     col = 0
-    ws.write(row, col, 'Knowledge Area')
+    ws.write(row, col, 'Word')
     col += 1
-    ws.write(row, col, 'Course Title')
+    ws.write(row, col, 'Stem')
     col += 1
-    ws.write(row, col, 'Description')
+    ws.write(row, col, 'Tagged as')
+    col += 1
+    ws.write(row, col, 'Sentence')
+    col += 1
+    ws.write(row, col, 'Potential Learning Outcome')
     
 
     for course in coursesWithDescriptions:
         blob = TextBlob(course.getDescription())
         for sentence in blob.sentences:
+            sentenceIsLO = False
             #print(sentence)
+            #stemmed = [porter.stem(word) for word in sentence]
             for word, pos in sentence.tags:
+                stem = porter.stem(word)
+                col = 0
+                row += 1
+                ws.write(row, col, "{}".format(word))
+                col += 1
+                ws.write(row,col,"{}".format(stem))
+                col += 1
+                ws.write(row, col, "{}".format(pos))
+                col += 1
+                ws.write(row,col,str(sentence))
                 
-                if constant.BLOOM_ACTION_WORDS.count(word) >= 1:
-                    print(sentence)
-                    print({"word: {}, pos: {}, startswith V: {}".format(word, pos, pos.startswith("V"))})
-                    col = 0
-                    row += 1
-                    ws.write(row, col, "word: {}".format(word))
-                    col += 1
-                    ws.write(row, col, "pos: {}".format(pos))
-                    col += 1
-                    ws.write(row, col, "startswith V: {}".format(pos.startswith("V")))
+                if constant.LL_VERBS.count(word) >= 1:
                     col += 1
                     ws.write(row,col,str(sentence))
+                elif constant.LL_NOUNS.count(word) >= 1:
                     col += 1
-                    break
+                    ws.write(row,col,str(sentence))
+                elif constant.LL_ADJECTIVES.count(word) >= 1:
+                    col += 1
+                    ws.write(row,col,str(sentence))
+                else:
+                    for phrase in constant.LL_PHRASES:
+                        if sentence.noun_phrases.count(phrase) >= 1:
+                            col += 1
+                            ws.write(row,col,str(sentence))
+                
                     
     ws.set_column(0, 0, 35, default_format)
     ws.set_column(1, 1, 50, default_format)
-    ws.set_column(2, 2, 120, description_format)
+    ws.set_column(2, 2, 50, default_format)
     ws.set_column(3, 3, 120, description_format)
+    ws.set_column(4, 4, 120, description_format)
 
     
 
@@ -339,6 +363,7 @@ def writeLearningOutcomes(ws):
     global description_format
     
     posFile = "taggedwords.csv"
+    
     
     taggedRow = 0
     taggedCol = 0
