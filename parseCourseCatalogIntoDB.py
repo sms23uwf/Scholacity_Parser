@@ -18,15 +18,31 @@ import nltk
 from nltk.stem.porter import PorterStemmer
 from firebase import firebase
 
+firstPositionOfCKA = 0
+currentKnowledgeArea = KnowledgeArea()
 
-def ParagraphIsKnowledgeArea(p, i, lastPos, pText, firstPositionOfCKA):
+def getMatchingKnowledgeArea(candidate):
+    # find matching knowledge area and return Id
+    
+    for knowledgearea in knowledgeAreas:
+        if knowledgearea.getText().strip() == str(candidate).strip():
+            return knowledgearea
+        
+    return KnowledgeArea()
+
+
+def ParagraphIsKnowledgeArea(pdocument, p, i, lastPos, pText):
     # make the determination that the content of a paragraph consists of a Knowledge Area
+    
+    global firstPositionOfCKA
+    
     if p.style.name == constant.STYLE_KNOWLEDGEAREA and pText.strip() and pText[lastPos-1].isdigit():
         pPrev = document.paragraphs[i - 1]
         pPrevText = pPrev.text.strip()
         pPrevLasPos = len(pPrevText)
         
         pPrevRunCount = len(pPrev.runs)
+        
         pPrevIsBold = 'false'
         if pPrevRunCount > 0:
             pPrevIsBold = 'true' if pPrev.runs[0].bold else 'false' 
@@ -35,8 +51,9 @@ def ParagraphIsKnowledgeArea(p, i, lastPos, pText, firstPositionOfCKA):
             if pPrevRunCount > 1:
                 pPrevIsBold = 'true' if pPrev.runs[1].bold else 'false' 
         
+        
         if pPrevText != "":
-            if pPrev.style.name == constant.STYLE_KNOWLEDGEAREA and pPrevIsBold == 'true' and not (pPrevText[pPrevLasPos-1].isdigit()):
+            if pPrev.style.name == constant.STYLE_NORMAL and pPrevIsBold == 'true' and not (pPrevText[pPrevLasPos-1].isdigit()):
                 if firstPositionOfCKA == 0:
                     firstPositionOfCKA = i
         
@@ -48,6 +65,7 @@ def ParagraphIsKnowledgeArea(p, i, lastPos, pText, firstPositionOfCKA):
 def ExtractKnowledgeAreas(firebase, document, knowledgeAreas):
     # find the knowledge areas in the document and write them to a database table
     
+    global firstPositionOfCKA
     firstPositionOfCKA = 0
     
     for i, p in enumerate(document.paragraphs):
@@ -55,9 +73,10 @@ def ExtractKnowledgeAreas(firebase, document, knowledgeAreas):
         lastPos = len(pText)
         kaText = ""
         
-        isKnowledgeArea, kaText = ParagraphIsKnowledgeArea(p, i, lastPos, pText,firstPositionOfCKA)
+        isKnowledgeArea, kaText = ParagraphIsKnowledgeArea(document, p, i, lastPos, pText)
         
-        if isKnowledgeArea:
+        
+        if isKnowledgeArea == 'true' and kaText:
             knowledgeArea = KnowledgeArea()
             knowledgeArea.setText(kaText)
             knowledgeAreas.append(knowledgeArea)
@@ -72,28 +91,84 @@ def ExtractKnowledgeAreas(firebase, document, knowledgeAreas):
             'Content':knowledgeArea.getText()    
         }
         result = firebase.post('KnowledgeArea',newKnowledgeArea)
-        knowledgeArea.setId(result)
+        knowledgeArea.setId(result.get("name"))
         
-            
+      
+# def writeCourses():
+#     # build a list of courses and output a worksheet 
+#     global document
+#     global currentKnowledgeArea
+#     global courses
+#     global default_format
+
+#     for p in document.paragraphs:
+         
+#        #print(p.text.strip())
+#         if p.style.name == constant.STYLE_NORMAL:
+#             if knowledgeAreas.count(p.text.strip()) == 1:
+#                 currentKnowledgeArea = knowledgeAreas[knowledgeAreas.index(p.text.strip())]
+#             else:
+#                 currentKnowledgeArea = currentKnowledgeArea
+#         else:
+#             currentKnowledgeArea = KnowledgeArea()
+    
+       
+#         if currentKnowledgeArea.getId() != "" and p.text.strip() != "":
+#             course = Course()
+#             course.setKnowledgeArea(currentKnowledgeArea)
+#             course.setTOCEntry(p.text.strip())
+#             course.setTitle(p.text.strip().rstrip(string.digits))
+#             courses.append(course)
+
+#     row = 0
+#     col = 0
+#     ws.write(row, col, 'Knowledge Area')
+#     col += 1
+#     ws.write(row, col, 'Course Title')
+#     col = 0
+#     row += 1
+    
+#     for course in courses:
+#         if course.getKnowledgeArea() != course.getTitle():
+#             ws.write(row, col, course.getKnowledgeArea())
+#             col += 1
+#             ws.write(row, col, course.getTitle())
+#             col += 1
+#             ws.write(row, col, course.getDescription())
+#             col = 0
+#             row += 1
+
+#     ws.set_column(0, 0, 35, default_format)
+#     ws.set_column(1, 1, 50, default_format)
+
+
+
 def ExtractCourses(firebase, document, knowledgeAreas, courses):
     # build a list of courses with foreign key back to knowledge area and insert into DB
     
-    currentKnowledgeArea = KnowledgeArea()
-
+    global currentKnowledgeArea
+    knowledgeAreaId = ""
+    candidateId = ""
+    
+   
     for p in document.paragraphs:
          
-        if p.style.name == constant.STYLE_KNOWLEDGEAREA:
-            if knowledgeAreas.count(p.text.strip()) == 1:
-                currentKnowledgeArea = knowledgeAreas[knowledgeAreas.index(p.text.strip())]
-            else:
-                currentKnowledgeArea = currentKnowledgeArea
+        if p.style.name == constant.STYLE_NORMAL:
+            currentKnowledgeArea = getMatchingKnowledgeArea(p.text.strip())
+            candidateId = currentKnowledgeArea.getId()
+            
+            if candidateId != "":
+                knowledgeAreaId = str(candidateId)
+                print("knowledgeAreaId:{}".format(knowledgeAreaId))
+                  
         else:
-            currentKnowledgeArea = KnowledgeArea()
+            knowledgeAreaId = ""
     
        
-        if p.text.strip() and currentKnowledgeArea.getText() != p.text.strip():
+        if knowledgeAreaId != "" and p.text.strip() != "":
             course = Course()
-            course.setKnowledgeAreaId(currentKnowledgeArea.getId)
+            course.setKnowledgeAreaId(knowledgeAreaId)
+            course.setKnowledgeArea(currentKnowledgeArea.getText())
             course.setTOCEntry(p.text.strip())
             course.setTitle(p.text.strip().rstrip(string.digits))
             courses.append(course)
@@ -101,6 +176,9 @@ def ExtractCourses(firebase, document, knowledgeAreas, courses):
     ExtractCourseDescriptions(document, courses)   
     
     for course in courses:
+        if course.getKnowledgeArea() == course.getTitle():
+            continue
+        
         newCourse = {
             'KnowledgeAreaId':course.getKnowledgeAreaId(),
             'Name':course.getTitle(),
@@ -290,7 +368,7 @@ paragraphs2 = []
 
 ExtractKnowledgeAreas(firebase, document, knowledgeAreas)
 ExtractCourses(firebase, document, knowledgeAreas, courses)
-ExtractLearningOutcomes(firebase, document, courses)
+#ExtractLearningOutcomes(firebase, document, courses)
 
 
         

@@ -22,7 +22,7 @@ class Course:
         self._id = id
         
     def getKnowledgeAreaId(self):
-        return self._id
+        return self._knowledgeAreaId
     
     def setKnowledgeAreaId(self, knowledgeAreaId):
         self._knowledgeAreaId = knowledgeAreaId
