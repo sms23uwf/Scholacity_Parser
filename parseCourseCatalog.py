@@ -13,6 +13,7 @@ from textblob import TextBlob
 from course import Course
 import string
 from paragraph import Paragraph
+from paragraph import Run
 import re
 import xlsxwriter
 import nltk
@@ -35,6 +36,8 @@ paragraphs2 = []
 
 number = 0
 document = Document('Fall2019_LLFullCatalog.docx')
+#document = Document('Spring2020_LeisureLearningCatalogFULL.docx')
+
 
 currentKnowledgeArea = ""
 
@@ -54,9 +57,20 @@ def writeDocStyles():
             if p.text.strip() != "":
                 number = number + 1
                 paragraph = Paragraph()
+                runCnt = 0
+                for r in p.runs:
+                    runCnt += 1
+                    run = Run()
+                    run.setBold(str(r.bold))
+                    run.setFont(r.font.name)
+                    run.setItalic(str(r.font.italic))
+                    paragraph.setRuns(run)
+                    
+                    
                 paragraph.setNumber(number)
                 paragraph.setStyle(p.style.name)
-                paragraph.setText(p.text.strip().replace("New!","").rstrip(string.digits).lstrip())
+                paragraph.setText(p.text.strip().rstrip(string.digits))
+                paragraph.setRunCount(runCnt)
                 paragraphs1.append(paragraph)
                 
         number = 0 
@@ -84,14 +98,15 @@ def writeDocStyles():
             writer.writerow({'number': paragraph.getNumber(), 'style': paragraph.getStyle(), 'text': paragraph.getText()})  
             
     with open(wrawFile, "w") as rawoutput:
-        fieldnames = ['number','style','text']
+        fieldnames = ['number','style','runs','font','bold','text']
     
         rwriter = csv.DictWriter(rawoutput, fieldnames=fieldnames)
     
         rwriter.writeheader()
 
         for paragraph in paragraphs1:
-            rwriter.writerow({'number': paragraph.getNumber(), 'style': paragraph.getStyle(), 'text': paragraph.getText()})  
+            for run in paragraph.getRuns():
+                rwriter.writerow({'number': paragraph.getNumber(), 'style': paragraph.getStyle(), 'runs': paragraph.getRunCount(), 'font': run.getFont(), 'bold': run.getBold(),  'text': paragraph.getText()})  
  
 def writeTables():
     # find and output the tables in the document
@@ -512,33 +527,35 @@ def writeCoursesWithDescriptions(ws):
        
                     
 
-workbook = xlsxwriter.Workbook('Course_Catalog_Extraction.xlsx')
-wsKnowledgeAreas = workbook.add_worksheet()
-wsKnowledgeAreas.name = "Knowledge Areas"
+# workbook = xlsxwriter.Workbook('Course_Catalog_Extraction.xlsx')
+# wsKnowledgeAreas = workbook.add_worksheet()
+# wsKnowledgeAreas.name = "Knowledge Areas"
 
-wsCourses = workbook.add_worksheet()
-wsCourses.name = "Courses"
+# wsCourses = workbook.add_worksheet()
+# wsCourses.name = "Courses"
 
-wsCourseDescriptions = workbook.add_worksheet()
-wsCourseDescriptions.name = "Course Descriptions"
+# wsCourseDescriptions = workbook.add_worksheet()
+# wsCourseDescriptions.name = "Course Descriptions"
 
-wsLearningOutcomes = workbook.add_worksheet()
-wsLearningOutcomes.name = "Stated Learning Outcomes"
+# wsLearningOutcomes = workbook.add_worksheet()
+# wsLearningOutcomes.name = "Stated Learning Outcomes"
 
-wsPOSBreakdown = workbook.add_worksheet()
-wsPOSBreakdown.name = "parts of speech"
+# wsPOSBreakdown = workbook.add_worksheet()
+# wsPOSBreakdown.name = "parts of speech"
 
 
-default_format = workbook.add_format({'valign':'top'})
-description_format = workbook.add_format({'text_wrap':'true', 'valign':'top'})
+# default_format = workbook.add_format({'valign':'top'})
+# description_format = workbook.add_format({'text_wrap':'true', 'valign':'top'})
 
-writeKnowledgeAreas(wsKnowledgeAreas)
-writeCourses(wsCourses)
-writeCoursesWithDescriptions(wsCourseDescriptions)
-writeLearningOutcomes(wsLearningOutcomes)
-writePOSBreakdown(wsPOSBreakdown)
+writeDocStyles()
 
-workbook.close()
+# writeKnowledgeAreas(wsKnowledgeAreas)
+# writeCourses(wsCourses)
+# writeCoursesWithDescriptions(wsCourseDescriptions)
+# writeLearningOutcomes(wsLearningOutcomes)
+# writePOSBreakdown(wsPOSBreakdown)
+
+#workbook.close()
 
         
     
