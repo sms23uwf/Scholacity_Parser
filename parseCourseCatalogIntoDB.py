@@ -23,7 +23,7 @@ import json
 import re
 
 
-
+existingKnowledgeAreas = []        
 firstPositionOfCKA = 0
 currentKnowledgeArea = KnowledgeArea()
 courseNameStyles = [constant.STYLE_NORMAL, constant.STYLE_HEADING]
@@ -82,7 +82,31 @@ def ExtractCatalogRecord(firebase, documentName, documentSemester, documentYear)
    return result
     
    
-
+def GetExistingKnowledgeAreas(firebase, document):
+    # get existing knowledge areas from the database and put into array
+    
+    global existingKnowledgeAreas
+    
+    user_key_list = []
+    
+    result = firebase.get('/KnowledgeArea',None)
+    
+    for i in result.keys():
+        user_key_list.append(i)
+        
+    
+    
+    for i in user_key_list:
+        knowledgeArea = KnowledgeArea()
+        knowledgeArea.setText(result[i]['Content'])
+        knowledgeArea.setId(i)
+        existingKnowledgeAreas.append(knowledgeArea) 
+        
+        print(i)
+        print(knowledgeArea.getText())
+    
+    
+    
 def ExtractKnowledgeAreas(firebase, document, knowledgeAreas):
     # find the knowledge areas in the document and write them to a database table
     
@@ -111,10 +135,29 @@ def ExtractKnowledgeAreas(firebase, document, knowledgeAreas):
         newKnowledgeArea = {
             'Content':knowledgeArea.getText()    
         }
-        result = firebase.post('KnowledgeArea',newKnowledgeArea)
-        knowledgeArea.setId(result.get("name"))
 
-   
+        existingKey = FindExistingKnowledgeAreaId(knowledgeArea)
+        
+        if existingKey == "":
+            result = firebase.post('KnowledgeArea',newKnowledgeArea)
+            knowledgeArea.setId(result.get("name"))
+        else:
+            knowledgeArea.setId(existingKey)
+
+
+def FindExistingKnowledgeAreaId(newKnowledgeArea):
+    # find existing knowledgeArea - if found return Id
+    
+    global existingKnowledgeAreas
+    
+    for existingKnowledgeArea in existingKnowledgeAreas:
+        if existingKnowledgeArea.getText() == newKnowledgeArea.getText():
+            return existingKnowledgeArea.getId()
+        
+    return ""
+    
+        
+    
 def ExtractAdditionalDescriptionsFromTextBoxes(firebase, document, courses):
     # some text is not obtainable via the API - this method will find the missing
     # textboxes and obtain course descriptions if missing
@@ -552,6 +595,7 @@ def findInlineImages(document):
     
     for img in document.inline_shapes:
         print("inline image found")
+        print(img)
         
 
 def ExtractLearningOutcomes(firebase, document, courses):
@@ -580,13 +624,17 @@ def ExtractLearningOutcomes(firebase, document, courses):
        
                     
 firebase = firebase.FirebaseApplication('https://scholacity-org-test.firebaseio.com/')
+# document = Document('Spring2020_LeisureLearningCatalogFULL.docx')
+# documentName = "Spring2020_LeisureLearningCatalogFULL.docx";
+# documentSemester = "Spring";
+# documentYear = "2020";
+
 document = Document('Spring2020_LeisureLearningCatalogFULL.docx')
-documentName = "Spring2020_LeisureLearningCatalogFULL.docx";
-documentSemester = "Spring";
+documentName = "UWFLeisureLearning_Summer2020OnlineClasses.docx";
+documentSemester = "Summer";
 documentYear = "2020";
 
 
-        
 knowledgeAreas = []
 courses = []
 paragraphs1 = []
@@ -596,6 +644,7 @@ findInlineImages(document)
 
 catalogId = ExtractCatalogRecord(firebase, documentName, documentSemester, documentYear)
 
+GetExistingKnowledgeAreas(firebase, document)
 ExtractKnowledgeAreas(firebase, document, knowledgeAreas)
 ExtractCourseAndDescription(firebase, document, knowledgeAreas, courses, catalogId)
 ExtractLearningOutcomes(firebase, document, courses)
