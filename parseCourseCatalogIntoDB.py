@@ -12,6 +12,7 @@ from docx import Document
 from textblob import TextBlob
 from course import Course
 from knowledgearea import KnowledgeArea
+from catalog import Catalog
 import string
 from paragraph import Paragraph
 import nltk
@@ -22,7 +23,7 @@ import xml.etree.ElementTree as ET
 import json
 import re
 
-
+existingCatalogRecords = []
 existingKnowledgeAreas = []        
 firstPositionOfCKA = 0
 currentKnowledgeArea = KnowledgeArea()
@@ -69,34 +70,93 @@ def ParagraphIsKnowledgeArea(pdocument, p, i, lastPos, pText):
             
     return 'false', ""
 
+
+def GetExistingCatalogRecords(firebase, documentName, documentSemester, documentYear):
+    # get existing catalog records from database and put into array
+    
+    global existingCatalogRecords
+    
+    obj_key_list = []
+    
+    result = firebase.get('/Catalog', None)
+    
+    if result is None:
+        return
+    
+    for i in result.keys():
+        obj_key_list.append(i)
+        
+    
+    for i in obj_key_list:
+        catalog = Catalog()
+        catalog.setId(i)
+        catalog.setDocumentName(result[i]['document_name'])
+        catalog.setSemester(result[i]['semester'])
+        catalog.setYear(result[i]['year'])
+        existingCatalogRecords.append(catalog)
+        
+        print(i)
+        print(catalog.getSemester())
+        
+    
+    
+    
 def ExtractCatalogRecord(firebase, documentName, documentSemester, documentYear):
     # look if catalog record exists, if not - write it
 
-   newCatalogRecord = {
-        'document_name': documentName,
-        'semester': documentSemester,
-        'year': documentYear
-   }
-   result = firebase.post('Catalog', newCatalogRecord)
-    
-   return result
-    
+   catalog = Catalog()
+   catalog.setDocumentName(documentName)
+   catalog.setSemester(documentSemester)
+   catalog.setYear(documentYear)
    
+   existingKey = FindExistingCatalogId(catalog)
+
+   if existingKey == "":
+       newCatalogRecord = {
+            'document_name': documentName,
+            'semester': documentSemester,
+            'year': documentYear
+       }
+       result = firebase.post('Catalog', newCatalogRecord)
+       catalog.setId(result.get("name"))
+   else:
+       catalog.setId(existingKey)
+   
+    
+   return catalog
+
+
+   
+def FindExistingCatalogId(newCatalogRecord):
+    # find existing knowledgeArea - if found return Id
+    
+    global existingCatalogRecords
+    
+    for existingCatalogRecord in existingCatalogRecords:
+        if existingCatalogRecord.getDocumentName() == newCatalogRecord.getDocumentName():
+            return existingCatalogRecord.getId()
+        
+    return ""
+
+
 def GetExistingKnowledgeAreas(firebase, document):
     # get existing knowledge areas from the database and put into array
     
     global existingKnowledgeAreas
     
-    user_key_list = []
+    obj_key_list = []
     
-    result = firebase.get('/KnowledgeArea',None)
+    result = firebase.get('/KnowledgeArea', None)
+    
+    if result is None:
+        return
     
     for i in result.keys():
-        user_key_list.append(i)
+        obj_key_list.append(i)
         
     
     
-    for i in user_key_list:
+    for i in obj_key_list:
         knowledgeArea = KnowledgeArea()
         knowledgeArea.setText(result[i]['Content'])
         knowledgeArea.setId(i)
@@ -209,6 +269,8 @@ def iter(element, tag=None):
 def ExtractCourseAndDescription(firebase, document, knowledgeAreas, courses, catalogId):
     # build a list of courses with foreign key back to knowledge area and insert into DB
     
+    print("inside ExtractCourseAndDescription")
+    
     global currentKnowledgeArea
     knowledgeAreaId = ""
     knowledgeAreaTitle = ""
@@ -226,7 +288,7 @@ def ExtractCourseAndDescription(firebase, document, knowledgeAreas, courses, cat
             if candidateId != "":
                 knowledgeAreaId = str(candidateId)
                 knowledgeAreaTitle = currentKnowledgeArea.getText()
-                #print("knowledgeAreaId:{}".format(knowledgeAreaId))
+                print("knowledgeAreaId:{}".format(knowledgeAreaId))
                   
         else:
             knowledgeAreaId = ""
@@ -605,6 +667,8 @@ def ExtractLearningOutcomes(firebase, document, courses):
     # if match, select sentence as a learning outcome
     
     
+    print("inside ExtractLearningOutcomes")
+    
     for course in courses:
         
         #print("course: {}".format(course.getTitle()))
@@ -624,12 +688,18 @@ def ExtractLearningOutcomes(firebase, document, courses):
        
                     
 firebase = firebase.FirebaseApplication('https://scholacity-org-test.firebaseio.com/')
+
+# document = Document('Fall2019_LLFullCatalog.docx')
+# documentName = "Fall2019_LLFullCatalog.docx";
+# documentSemester = "Fall";
+# documentYear = "2019";
+
 # document = Document('Spring2020_LeisureLearningCatalogFULL.docx')
 # documentName = "Spring2020_LeisureLearningCatalogFULL.docx";
 # documentSemester = "Spring";
 # documentYear = "2020";
 
-document = Document('Spring2020_LeisureLearningCatalogFULL.docx')
+document = Document('UWFLeisureLearning_Summer2020OnlineClasses.docx')
 documentName = "UWFLeisureLearning_Summer2020OnlineClasses.docx";
 documentSemester = "Summer";
 documentYear = "2020";
@@ -642,7 +712,10 @@ paragraphs2 = []
 
 findInlineImages(document)
 
-catalogId = ExtractCatalogRecord(firebase, documentName, documentSemester, documentYear)
+GetExistingCatalogRecords(firebase, documentName, documentSemester, documentYear)
+
+catalog = ExtractCatalogRecord(firebase, documentName, documentSemester, documentYear)
+catalogId = catalog.getId()
 
 GetExistingKnowledgeAreas(firebase, document)
 ExtractKnowledgeAreas(firebase, document, knowledgeAreas)
