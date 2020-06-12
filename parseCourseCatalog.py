@@ -20,6 +20,7 @@ import nltk
 from nltk.stem.porter import PorterStemmer
 from firebase import firebase
 
+
 firebase = firebase.FirebaseApplication('https://scholacity-org.firebaseapp.com/')
         
 knowledgeAreas = []
@@ -34,17 +35,22 @@ coursesWithDescriptions = []
 paragraphs1 = []
 paragraphs2 = []
 
+
+
 number = 0
 document = Document('Fall2019_LLFullCatalog.docx')
+
+
 #document = Document('Spring2020_LeisureLearningCatalogFULL.docx')
+#document = Document('UWFLeisureLearning_Summer2020OnlineClasses.docx')
 
 
 currentKnowledgeArea = ""
 
 def writeDocStyles():
     global number
-    writeFile = "docStyles3.csv"
-    wrawFile = "docStylesRaw.csv"
+    writeFile = "docStyles_fall.csv"
+    wrawFile = "docStylesRaw_fall.csv"
     
     global document
     
@@ -108,6 +114,9 @@ def writeDocStyles():
             for run in paragraph.getRuns():
                 rwriter.writerow({'number': paragraph.getNumber(), 'style': paragraph.getStyle(), 'runs': paragraph.getRunCount(), 'font': run.getFont(), 'bold': run.getBold(),  'text': paragraph.getText()})  
  
+
+   
+    
 def writeTables():
     # find and output the tables in the document
            
@@ -117,20 +126,41 @@ def writeTables():
     with open(writeFile, 'w') as outputTables:
         fieldnames = ['table values']
         tableWriter = csv.writer(outputTables)
-
-        for i, p in enumerate(document.tables):
-            numRows = len(p.rows)
-            numColumns = len(p.columns)
+        
+        for table in document.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    for paragraph in cell.paragraphs:
+                        tableWriter.writerow(paragraph.text)
+                        
+        # for i, p in enumerate(document.tables):
+        #     numRows = len(p.rows)
+        #     numColumns = len(p.columns)
             
-            print("table {}: has {} rows".format(i, numRows))
-            print("table {}: has {} columns".format(i, numColumns))
-            for x in range(numRows):
-                for y in range(numColumns):
-                    thisCell = p.cell(x,y)
-                    print("cell[{},{}] contents is {}".format(x,y,thisCell.text))
-                    tableWriter.writerow({"table {}: cell[{},{}] content is {}".format(i,x,y,thisCell.text)})
+        #     print("table {}: has {} rows".format(i, numRows))
+        #     print("table {}: has {} columns".format(i, numColumns))
+        #     for x in range(numRows):
+        #         for y in range(numColumns):
+        #             thisCell = p.cell(x,y)
+        #             print("cell[{},{}] contents is {}".format(x,y,thisCell.text))
+        #             tableWriter.writerow({"table {}: cell[{},{}] content is {}".format(i,x,y,thisCell.text)})
             
                 
+def writeInlineImages():
+    # find and output the contents of inline images in the document
+    
+    global document
+    writeFile = "docImages.csv"
+    
+    with open(writeFile,'w') as outputImages:
+        fieldnames = ['number','type','text']
+        
+        imgWriter = csv.writer(outputImages)
+        
+        for i,p in enumerate(document.inline_shapes):
+            imgWriter.writerow({'number': i, 'type': p.type, 'text': ''})
+
+
     
 def writeKnowledgeAreas(ws):
     # find and output the knowledge areas
@@ -548,6 +578,9 @@ def writeCoursesWithDescriptions(ws):
 # description_format = workbook.add_format({'text_wrap':'true', 'valign':'top'})
 
 writeDocStyles()
+#writeTables()
+#writeInlineImages()
+#writeTextBoxContentsFromJSON()
 
 # writeKnowledgeAreas(wsKnowledgeAreas)
 # writeCourses(wsCourses)

@@ -1,11 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Jan 19 12:35:02 2020
-
-@author: Steve Satterfield
-"""
-
 import csv
 import constant
 from docx import Document
@@ -22,6 +14,7 @@ from docx.oxml.ns import qn
 import xml.etree.ElementTree as ET
 import json
 import re
+from typing import List, Set, Dict, Tuple, Optional
 
 existingCatalogRecords = []
 existingKnowledgeAreas = []        
@@ -30,7 +23,26 @@ currentKnowledgeArea = KnowledgeArea()
 courseNameStyles = [constant.STYLE_NORMAL, constant.STYLE_HEADING]
 
 
-def getMatchingKnowledgeArea(candidate):
+firebase = firebase.FirebaseApplication('https://scholacity-org-test.firebaseio.com/')
+
+document = Document('Fall2019_LLFullCatalog.docx')
+documentName = "Fall2019_LLFullCatalog.docx";
+documentSemester = "Fall";
+documentYear = "2019";
+
+# document = Document('Spring2020_LeisureLearningCatalogFULL.docx')
+# documentName = "Spring2020_LeisureLearningCatalogFULL.docx";
+# documentSemester = "Spring";
+# documentYear = "2020";
+
+
+knowledgeAreas = []
+courses = []
+paragraphs1 = []
+paragraphs2 = []
+
+
+def getMatchingKnowledgeArea(candidate: str) -> KnowledgeArea:
     # find matching knowledge area and return Id
     
     for knowledgearea in knowledgeAreas:
@@ -40,7 +52,7 @@ def getMatchingKnowledgeArea(candidate):
     return KnowledgeArea()
 
 
-def ParagraphIsKnowledgeArea(pdocument, p, i, lastPos, pText):
+def ParagraphIsKnowledgeArea(pdocument: Document, p: Paragraph, i: int, lastPos: int, pText: str) -> Tuple[bool, str]:
     # make the determination that the content of a paragraph consists of a Knowledge Area
     
     global firstPositionOfCKA
@@ -66,12 +78,12 @@ def ParagraphIsKnowledgeArea(pdocument, p, i, lastPos, pText):
                 if firstPositionOfCKA == 0:
                     firstPositionOfCKA = i
         
-                return 'true', pPrevText
+                return True, pPrevText
             
-    return 'false', ""
+    return False, ""
 
 
-def GetExistingCatalogRecords(firebase, documentName, documentSemester, documentYear):
+def GetExistingCatalogRecords(firebase: firebase, documentName: str, documentSemester: str, documentYear: str) -> None:
     # get existing catalog records from database and put into array
     
     global existingCatalogRecords
@@ -94,14 +106,10 @@ def GetExistingCatalogRecords(firebase, documentName, documentSemester, document
         catalog.setSemester(result[i]['semester'])
         catalog.setYear(result[i]['year'])
         existingCatalogRecords.append(catalog)
-        
-        print(i)
-        print(catalog.getSemester())
-        
+   
     
     
-    
-def ExtractCatalogRecord(firebase, documentName, documentSemester, documentYear):
+def ExtractCatalogRecord(firebase: firebase, documentName: str, documentSemester: str, documentYear: str) -> Catalog:
     # look if catalog record exists, if not - write it
 
    catalog = Catalog()
@@ -127,7 +135,7 @@ def ExtractCatalogRecord(firebase, documentName, documentSemester, documentYear)
 
 
    
-def FindExistingCatalogId(newCatalogRecord):
+def FindExistingCatalogId(newCatalogRecord: Catalog) -> str:
     # find existing knowledgeArea - if found return Id
     
     global existingCatalogRecords
@@ -139,7 +147,7 @@ def FindExistingCatalogId(newCatalogRecord):
     return ""
 
 
-def GetExistingKnowledgeAreas(firebase, document):
+def GetExistingKnowledgeAreas(firebase: firebase, document: Document) -> None:
     # get existing knowledge areas from the database and put into array
     
     global existingKnowledgeAreas
@@ -161,13 +169,9 @@ def GetExistingKnowledgeAreas(firebase, document):
         knowledgeArea.setText(result[i]['Content'])
         knowledgeArea.setId(i)
         existingKnowledgeAreas.append(knowledgeArea) 
-        
-        print(i)
-        print(knowledgeArea.getText())
+   
     
-    
-    
-def ExtractKnowledgeAreas(firebase, document, knowledgeAreas):
+def ExtractKnowledgeAreas(firebase: firebase, document: Document, knowledgeAreas: List[KnowledgeArea]) -> None:
     # find the knowledge areas in the document and write them to a database table
     
     global firstPositionOfCKA
@@ -181,7 +185,7 @@ def ExtractKnowledgeAreas(firebase, document, knowledgeAreas):
         isKnowledgeArea, kaText = ParagraphIsKnowledgeArea(document, p, i, lastPos, pText)
         
         
-        if isKnowledgeArea == 'true' and kaText:
+        if isKnowledgeArea and kaText:
             knowledgeArea = KnowledgeArea()
             knowledgeArea.setText(kaText)
             knowledgeAreas.append(knowledgeArea)
@@ -205,7 +209,7 @@ def ExtractKnowledgeAreas(firebase, document, knowledgeAreas):
             knowledgeArea.setId(existingKey)
 
 
-def FindExistingKnowledgeAreaId(newKnowledgeArea):
+def FindExistingKnowledgeAreaId(newKnowledgeArea: KnowledgeArea) -> str:
     # find existing knowledgeArea - if found return Id
     
     global existingKnowledgeAreas
@@ -217,59 +221,8 @@ def FindExistingKnowledgeAreaId(newKnowledgeArea):
     return ""
     
         
-    
-def ExtractAdditionalDescriptionsFromTextBoxes(firebase, document, courses):
-    # some text is not obtainable via the API - this method will find the missing
-    # textboxes and obtain course descriptions if missing
-    
-    doc = zipfile.ZipFile('Fall2019_LLFullCatalog.docx','r')
-    doc.extractall()
-    xml_content = doc.read('word/document.xml')
-    tree = XML(xml_content)
-    
-    
-   
-    
-    #tree = ET.parse("Fall2019_LLFullCatalog/word/document.xml")
-    #root = tree.getroot()
-    
-    #textboxes = tree.findall('textbox')
-    #print("textboxes:{}".format(len(textboxes)))
-   
-    # for elem in root.getiterator():
-    #     iter(elem, elem.tag)
-
-    
-    
-    #namespaces = {'w':'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}
-    
-        
-    # wr_roots = root.findall('w:r', namespaces)
-    # print(wr_roots)
-    
-    # for atype in wr_roots:
-    #     print(atype.get('w:t'))
-        
-    # doc_elm = document._element
-    # textBoxes = doc_elm.xpath('.//v:textBox')
-    # for textBox in textBoxes:
-    #     print("textBox value is: {}".format(textBox))
-        
- 
-def iter(element, tag=None):
-    if tag == "*":
-        tag = None
-    if tag is None or element.tag == tag:
-        print(element.tag)
-    for e in element.getchildren():
-        for e in e.iter(tag):
-            print(e.tag)
-            
-      
-def ExtractCourseAndDescription(firebase, document, knowledgeAreas, courses, catalogId):
+def ExtractCourseAndDescription(firebase: firebase, document: Document, knowledgeAreas: List[KnowledgeArea], courses: List[Course], catalogId: str) -> None:
     # build a list of courses with foreign key back to knowledge area and insert into DB
-    
-    print("inside ExtractCourseAndDescription")
     
     global currentKnowledgeArea
     knowledgeAreaId = ""
@@ -383,7 +336,7 @@ def ExtractCourseAndDescription(firebase, document, knowledgeAreas, courses, cat
         course.setId(result)
 
 
-def ExtractCourses(firebase, document, knowledgeAreas, courses):
+def ExtractCourses(firebase: firebase, document: Document, knowledgeAreas: List[KnowledgeArea], courses: List[Course]) -> None:
     # build a list of courses with foreign key back to knowledge area and insert into DB
     
     global currentKnowledgeArea
@@ -447,15 +400,12 @@ def ExtractCourses(firebase, document, knowledgeAreas, courses):
         
 
 
-def HeaderIsCourseTitle(candidate):
+def HeaderIsCourseTitle(candidate: str) -> bool:
     # compare candidate with every course title until match found or eol    
 
-    #print("candidate: {}".format(candidate))
     candidate = candidate.replace("New!","").replace("*","").strip()
     
-    
     for course in courses:
-        #print("course title: {}".format(course.getTitle()))
         
         compareThis = []
         courseTitle = course.getTitle().strip()
@@ -465,6 +415,12 @@ def HeaderIsCourseTitle(candidate):
         #print("course title: {}".format(courseTitle))
            
         if courseTitle != "":
+            
+            if str(courseTitle) == str(candidate):
+                return True
+            
+            if courseTitle.__contains__(candidate) or candidate.__contains__(courseTitle):
+                return True
             
             if courseTitle.__contains__(":") and courseTitle[lastPos-1] != ":":
                 (key,value) = courseTitle.split(':',1)
@@ -476,17 +432,16 @@ def HeaderIsCourseTitle(candidate):
             
        
             if any(ele in candidate for ele in compareThis) and len(candidate) >= len(courseTitle):
-                return 'true'
+                return True
             else:
                 if len(candidate) >= len(courseTitle):
                     for titlePart in compareThis:
                         if titlePart in candidate:
-                            return 'true'
+                            return True
                     
-    #print("returning false")
-    return 'false'    
+    return False    
         
-def GetAssociatedCourse(courses,candidate):
+def GetAssociatedCourse(courses: List[Course],candidate: str) -> Course:
     # compare candidate with every course title until match found or eol    
     
     
@@ -524,14 +479,14 @@ def GetAssociatedCourse(courses,candidate):
     return nullCourse    
     
 
-def ExtractCourseDescriptions(document, courses):
+def ExtractCourseDescriptions(document: Document, courses: List[Course]) -> None:
     
-    courseDescriptionOn = 'false'
+    courseDescriptionOn = False
     allparagraphs = []
     pertinentParagraphs = []
     number = 0
     pHeader = ""
-    headerIsCourseTitle = 'false'
+    headerIsCourseTitle = False
     partialTitle = []
     fulltitle = ""
     
@@ -578,7 +533,7 @@ def ExtractCourseDescriptions(document, courses):
                 if pHeader != "":
                     headerIsCourseTitle = HeaderIsCourseTitle(pHeader)
                     
-            if headerIsCourseTitle == 'true':
+            if headerIsCourseTitle:
                 number = number + 1
                 pc = Paragraph()
                 pc.setNumber(number)
@@ -596,44 +551,25 @@ def ExtractCourseDescriptions(document, courses):
     for i, p in enumerate(pertinentParagraphs):
         courseTitleCandidate = p.getHeader().strip()
         #print("courseTitleCandidate: {}".format(courseTitleCandidate))
-        if p.getHeader().strip() != "" and courseDescriptionOn == 'true' and i > courseTitlePosition:
+        if p.getHeader().strip() != "" and courseDescriptionOn and i > courseTitlePosition:
             associatedCourse.setDescription(currentCourseDescription)
-            courseDescriptionOn = 'false'
+            courseDescriptionOn = False
             currentCourseDescription = ""
             courseTitlePosition = -1
-        if p.getHeader().strip() != "" and courseDescriptionOn == 'false':
-            courseDescriptionOn = 'true'
+        if p.getHeader().strip() != "" and not courseDescriptionOn:
+            courseDescriptionOn = True
             associatedCourse = GetAssociatedCourse(courses,p.getHeader().strip())
             #print("return from getAssociatedCourse(): {}".format(associatedCourse.getTitle()))
             courseTitlePosition = i
             currentCourseDescription += p.getText().strip()
-        if courseDescriptionOn == 'true' and i > courseTitlePosition:
+        if courseDescriptionOn and i > courseTitlePosition:
             currentCourseDescription += p.getText().strip()
 
         #print("currentCourseDescription: {}".format(currentCourseDescription))
 
 
 
-def OLDSentenceIsLO(sentence):
-    # determine if the sentence meets the criteria for a learning outcome
-    
-    nullSentence = ""
-    
-    for word, pos in sentence.tags:
-        if constant.LL_VERBS.count(word) >= 1 and pos in [constant.VERB, constant.VERB_GERUND, constant.VERB_PAST_PARTICIPLE, constant.VERB_PAST_TENSE, constant.VERB_SINGULAR_PRESENT, constant.VERB_THIRD_PERSON_SINGULAR]:
-            return 'true', str(sentence)
-        if constant.LL_NOUNS.count(word) >= 1 and pos in [constant.NOUN_PLURAL, constant.NOUN_PROPER_PLURAL, constant.NOUN_PROPER_SINGULAR, constant.NOUN_SINGULAR]:
-            return 'true', str(sentence)
-        if constant.LL_ADJECTIVES.count(word) >= 1 and pos in [constant.ADJECTIVE, constant.ADJECTIVE_COMPARATIVE, constant.ADJECTIVE_SUPERLATIVE]:
-            return 'true', str(sentence)
-        for phrase in constant.LL_PHRASES:
-            if sentence.noun_phrases.count(phrase) >= 1:
-                return 'true', str(sentence)
-            
-        return 'false', nullSentence
-    
-
-def SentenceIsLO(sentence):
+def SentenceIsLO(sentence: str) -> Tuple[bool, str]:
     # determine if the sentence meets the criteria for a learning outcome
     
     nullSentence = ""
@@ -649,25 +585,15 @@ def SentenceIsLO(sentence):
             if sentence.noun_phrases.count(phrase) >= 1:
                 return 'true', str(sentence)
             
-    return 'false', nullSentence
+    return False, nullSentence
 
 
-def findInlineImages(document):
-    # find inline images
-    
-    for img in document.inline_shapes:
-        print("inline image found")
-        print(img)
-        
-
-def ExtractLearningOutcomes(firebase, document, courses):
+def ExtractLearningOutcomes(firebase: firebase, document: Document, courses: List[Course]) -> None:
     # load each course description into blob and get the sentences
     # tag parts of speech in each sentence
     # compare verb in each sentence to list of Bloom action verbs
     # if match, select sentence as a learning outcome
     
-    
-    print("inside ExtractLearningOutcomes")
     
     for course in courses:
         
@@ -677,7 +603,7 @@ def ExtractLearningOutcomes(firebase, document, courses):
         for sentence in blob.sentences:
             isLO, candidateLO = SentenceIsLO(sentence)
             
-            if isLO == 'true':
+            if isLO:
                 newLO = {
                     'CourseId':course.getId(),
                     'Text':candidateLO
@@ -686,32 +612,6 @@ def ExtractLearningOutcomes(firebase, document, courses):
                 
    
        
-                    
-firebase = firebase.FirebaseApplication('https://scholacity-org-test.firebaseio.com/')
-
-# document = Document('Fall2019_LLFullCatalog.docx')
-# documentName = "Fall2019_LLFullCatalog.docx";
-# documentSemester = "Fall";
-# documentYear = "2019";
-
-# document = Document('Spring2020_LeisureLearningCatalogFULL.docx')
-# documentName = "Spring2020_LeisureLearningCatalogFULL.docx";
-# documentSemester = "Spring";
-# documentYear = "2020";
-
-document = Document('UWFLeisureLearning_Summer2020OnlineClasses.docx')
-documentName = "UWFLeisureLearning_Summer2020OnlineClasses.docx";
-documentSemester = "Summer";
-documentYear = "2020";
-
-
-knowledgeAreas = []
-courses = []
-paragraphs1 = []
-paragraphs2 = []
-
-findInlineImages(document)
-
 GetExistingCatalogRecords(firebase, documentName, documentSemester, documentYear)
 
 catalog = ExtractCatalogRecord(firebase, documentName, documentSemester, documentYear)
@@ -722,6 +622,4 @@ ExtractKnowledgeAreas(firebase, document, knowledgeAreas)
 ExtractCourseAndDescription(firebase, document, knowledgeAreas, courses, catalogId)
 ExtractLearningOutcomes(firebase, document, courses)
 
-
-        
-    
+          
