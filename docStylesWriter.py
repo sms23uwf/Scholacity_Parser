@@ -7,9 +7,11 @@ Created on Mon Jan 20 15:23:01 2020
 """
 
 import csv
-import constant
+import constants
 from docx import Document
 from textblob import TextBlob
+import paragraph
+import course
 from course import Course
 from paragraph import Paragraph
 import string

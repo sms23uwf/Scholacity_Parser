@@ -7,10 +7,14 @@ Created on Sun Jan 19 12:35:02 2020
 """
 
 import csv
-import constant
+import constants
 from docx import Document
 from textblob import TextBlob
+
+import course
 from course import Course
+import paragraph
+
 import string
 from paragraph import Paragraph
 from paragraph import Run

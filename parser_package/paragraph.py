@@ -3,7 +3,7 @@
 """
 Created on Mon Jan 20 18:25:35 2020
 
-@author: claudiasatterfield
+@author: Steven M. Satterfield
 """
 class Run:
     def __init__(self):

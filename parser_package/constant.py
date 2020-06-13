@@ -1,10 +1,12 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-Created on Sun Jan 19 15:21:53 2020
+    constants.py
+    --------------
 
-@author: Steve Satterfield
+    This is a shared repository for all constant values needed.
+
 """
+
+__author__ = "Steven M. Satterfield"
 
 STYLE_NORMAL = "Normal"
 STYLE_HEADING = "Heading 9"
