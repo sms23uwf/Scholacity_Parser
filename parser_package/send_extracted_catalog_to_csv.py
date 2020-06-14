@@ -25,7 +25,7 @@ knowledgeAreas = []
 courses = []
 learningObjectives = []
 
-workbook = xlsxwriter.Workbook('Course_Catalog_Review.xlsx')
+workbook = xlsxwriter.Workbook('../outputs/Course_Catalog_Review.xlsx')
 
 
 def GetKnowledgeAreas(firebase: firebase) -> None:
