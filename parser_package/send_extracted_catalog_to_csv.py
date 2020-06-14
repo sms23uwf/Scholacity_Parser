@@ -184,10 +184,13 @@ def writeWorksheet(ws, knowledgeArea):
     ws.write(row, col, 'Course')
     col += 1
 
-    ws.write(row, col, 'knowledgeAreaId')
+    ws.write(row, col, 'learningObjectiveId')
     col += 1
 
-    ws.write(row, col, 'KnowledgeArea')
+    ws.write(row, col, 'learningObjective - As Extracted')
+    col += 1
+
+    ws.write(row, col, 'learningObjective - As Revised')
 
     row += 1
     col = 0
@@ -199,6 +202,12 @@ def writeWorksheet(ws, knowledgeArea):
         if str(course.getKnowledgeAreaId()) == str(knowledgeAreaId):
             courseId = course.getId()
             if course.getDescription() == "":
+                ws.write(row, col, courseId)
+                col += 1
+                ws.write(row, col, course.getTitle())
+                row += 1
+                col = 0
+                # write another row for the course to allow for 2 learning outcomes
                 ws.write(row, col, courseId)
                 col += 1
                 ws.write(row, col, course.getTitle())
@@ -222,9 +231,10 @@ def writeWorksheet(ws, knowledgeArea):
                 continue
 
 
-GetKnowledgeAreas(firebase)
-GetCourses(firebase)
-GetLearningObjectives(firebase)
-
-writeKnowledgeAreaWorksheets(workbook)
-workbook.close()
+if __name__ == "__main__":
+    GetKnowledgeAreas(firebase)
+    GetCourses(firebase)
+    GetLearningObjectives(firebase)
+    
+    writeKnowledgeAreaWorksheets(workbook)
+    workbook.close()
