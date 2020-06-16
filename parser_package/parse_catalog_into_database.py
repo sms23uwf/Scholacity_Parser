@@ -25,7 +25,7 @@ from course import Course
 from learningobjective import LearningObjective
 from paragraph import Paragraph
 import constant
-
+import time
 
 existingCatalogRecords = []
 existingKnowledgeAreas = []
@@ -83,7 +83,6 @@ def ParagraphIsKnowledgeArea(pdocument: Document, p: Paragraph, i: int, lastPos:
     """
 
     global firstPositionOfCKA
-    global constants
 
     if p.style.name == constant.STYLE_KNOWLEDGEAREA and pText.strip() and pText[lastPos-1].isdigit():
         pPrev = document.paragraphs[i - 1]
@@ -299,7 +298,6 @@ def ExtractCourseAndDescription(firebase: firebase, document: Document, knowledg
     """
 
     global currentKnowledgeArea
-    global constants
 
     knowledgeAreaId = ""
     knowledgeAreaTitle = ""
@@ -317,8 +315,6 @@ def ExtractCourseAndDescription(firebase: firebase, document: Document, knowledg
             if candidateId != "":
                 knowledgeAreaId = str(candidateId)
                 knowledgeAreaTitle = currentKnowledgeArea.getText()
-                print("knowledgeAreaId:{}".format(knowledgeAreaId))
-
         else:
             knowledgeAreaId = ""
 
@@ -496,7 +492,6 @@ def ExtractCourseDescriptions(document: Document, courses: List[Course]) -> None
     partialTitle = []
 
     global courseNameStyles
-    global constants
 
     for p in document.paragraphs:
 
@@ -573,7 +568,6 @@ def SentenceIsLO(sentence: str) -> Tuple[bool, str]:
 
     """
 
-    global constants
 
     nullSentence = ""
 
@@ -630,14 +624,8 @@ def WriteLearningOutcomes(firebase: firebase, learningObjectives) -> None:
         Write the LearningObjectives captured in the global list
         to the database.
 
-        Parameters
-        ----------
-        firebase : firebase Database Connection
-        learningObjectives : LearningObjective object
-
-        Returns
-        -------
-        None
+        :param firebase: firebase Database Connection
+        :param learningObjectives: LearningObjective object
 
     """
 
@@ -651,13 +639,42 @@ def WriteLearningOutcomes(firebase: firebase, learningObjectives) -> None:
 
 if __name__ == "__main__":
 
+    tStart = time.localtime()
+    start_time = time.strftime("%H:%M:%S", tStart)
+    print("Current Time: {}".format(start_time))
+    t0 = time.time()
+    
+    
+    print("Check database for existing Catalog Records.")
     GetExistingCatalogRecords(firebase, documentName, documentSemester, documentYear)
 
+    print("Extract Catalog Record from current document.")
     catalog = ExtractCatalogRecord(firebase, documentName, documentSemester, documentYear)
     catalogId = catalog.getId()
 
+    print("Check database for existing Knowledge Areas.")
     GetExistingKnowledgeAreas(firebase, document)
+
+    print("Extract Knowledge Areas from the current document.")
     ExtractKnowledgeAreas(firebase, document, knowledgeAreas)
+
+    print("Extract Courses and Descriptions from the current document.")
     ExtractCourseAndDescription(firebase, document, knowledgeAreas, courses, catalogId)
+    
+    print("Extract stated Learning Objectives from the current document.")
     ExtractLearningOutcomes(firebase, document, courses)
+    
+    print("Write the extracted Learning Objectives to the Database.")
     WriteLearningOutcomes(firebase, learningObjectives)
+    
+    tEnd = time.localtime()
+    end_time = time.strftime("%H:%M:%S", tEnd)
+    print("Current Time: {}".format(end_time))
+    
+    t1 = time.time()
+    
+    tElapsed = t1 - t0
+    
+    print("Time elapsed in seconds: {} ".format(tElapsed))
+    
+    

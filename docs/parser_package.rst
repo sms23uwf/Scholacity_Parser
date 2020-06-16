@@ -44,6 +44,14 @@ parser\_package.knowledgearea module
    :undoc-members:
    :show-inheritance:
 
+parser\_package.learningobjective module
+----------------------------------------
+
+.. automodule:: parser_package.learningobjective
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 parser\_package.paragraph module
 --------------------------------
 
@@ -56,6 +64,22 @@ parser\_package.parse\_catalog\_into\_database module
 -----------------------------------------------------
 
 .. automodule:: parser_package.parse_catalog_into_database
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+parser\_package.send\_extracted\_catalog\_to\_csv module
+--------------------------------------------------------
+
+.. automodule:: parser_package.send_extracted_catalog_to_csv
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+parser\_package.update\_database\_from\_excel\_review module
+------------------------------------------------------------
+
+.. automodule:: parser_package.update_database_from_excel_review
    :members:
    :undoc-members:
    :show-inheritance:

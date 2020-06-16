@@ -62,14 +62,7 @@ def GetCourses(firebase: firebase) -> None:
         Get Courses from the database and insert them into the
         global collection.
 
-        Parameters
-        ----------
-        firebase : firebase
-            A firebase connection.
-
-        Returns
-        -------
-        None
+        :param firebase: A firebase connection
 
     """
 
@@ -102,12 +95,7 @@ def GetLearningObjectives(firebase: firebase) -> None:
 
         Parameters
         ----------
-        firebase : firebase
-            A firebase connection.
-
-        Returns
-        -------
-        None
+        :param firebase: A firebase connection
 
     """
 
@@ -137,13 +125,7 @@ def writeKnowledgeAreaWorksheets(wb: xlsxwriter.Workbook) -> None:
         create a worksheet for each, and call method to populate
         the worksheet with courses and learning objectives.
 
-        Parameters
-        ----------
-        wb : Excel Workbook Object
-
-        Returns
-        -------
-        None.
+        :param wb: Excel Workbook Object
 
     """
 
@@ -151,7 +133,7 @@ def writeKnowledgeAreaWorksheets(wb: xlsxwriter.Workbook) -> None:
 
     for knowledgeArea in knowledgeAreas:
         ws = wb.add_worksheet()
-        ws.name = knowledgeArea.getText()
+        ws.name = knowledgeArea.getText()[0:31]
         writeWorksheet(ws, knowledgeArea)
 
 
@@ -161,14 +143,8 @@ def writeWorksheet(ws, knowledgeArea):
         Iterate through the global collection of KnowledgeAreas
         and write them to a worksheet in an Excel workbook.
 
-        Parameters
-        ----------
-        ws : Excel Worksheet Object
-        knowledgeArea : KnowledgeArea Object
-
-        Returns
-        -------
-        None.
+        :param ws: Excel Worksheet Object
+        :param knowledgeArea: KnowledgeArea Object
 
     """
 

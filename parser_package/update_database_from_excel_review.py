@@ -1,6 +1,6 @@
 """
     update_database_from_excel_review.py
-    --------------------------------
+    --------------------------------------
 
     This module contains a set of functions that read the reviewed learning
     objectives from the excel file and update the database. If a new learning
@@ -59,16 +59,10 @@ def ApplyModificationToDatabase(firebase: firebase, courseId: str, loId: str, mo
         Thos method will receive the courseId, the learningObjectiveId,
         and the intended modification and apply the change to the database.
 
-        Parameters
-        ----------
-        firebase: a firebase connection
-        courseId : str
-        loId : str
-        modification : str
-
-        Returns
-        -------
-        None
+        :param firebase: a firebase connection
+        :param courseId: str
+        :param loId: str
+        :param modification: str
 
     """
 
@@ -95,10 +89,7 @@ def IterateSheets(firebase: firebase) -> None:
         This method will iterate through all of the worksheets in the workbook
         and call a method to make any indicated modifications to the databae.
 
-
-        Returns
-        -------
-        None.
+        :param firebase: a firebase connection
 
     """
 
