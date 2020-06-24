@@ -157,7 +157,16 @@ def writeWorksheet(ws, knowledgeArea):
     ws.write(row, col, 'CourseId')
     col += 1
 
-    ws.write(row, col, 'Course')
+    ws.write(row, col, 'CourseTitle - As Extracted')
+    col += 1
+
+    ws.write(row, col, 'CourseTitle - As Revised')
+    col += 1
+
+    ws.write(row, col, 'CourseDescription - As Extracted')
+    col += 1
+
+    ws.write(row, col, 'CourseDescription - As Revised')
     col += 1
 
     ws.write(row, col, 'learningObjectiveId')
@@ -181,12 +190,16 @@ def writeWorksheet(ws, knowledgeArea):
                 ws.write(row, col, courseId)
                 col += 1
                 ws.write(row, col, course.getTitle())
+                col += 2
+                ws.write(row, col, course.getDescription())
                 row += 1
                 col = 0
                 # write another row for the course to allow for 2 learning outcomes
                 ws.write(row, col, courseId)
                 col += 1
                 ws.write(row, col, course.getTitle())
+                col += 2
+                ws.write(row, col, course.getDescription())
                 row += 1
                 col = 0
                 continue
@@ -198,7 +211,9 @@ def writeWorksheet(ws, knowledgeArea):
                         ws.write(row, col, courseId)
                         col += 1
                         ws.write(row, col, course.getTitle())
-                        col += 1
+                        col += 2
+                        ws.write(row, col, course.getDescription())
+                        col += 2
                         ws.write(row, col, learningObjective.getId())
                         col += 1
                         ws.write(row, col, learningObjective.getText())

@@ -344,26 +344,26 @@ def ExtractCourseAndDescription(firebase: firebase, document: Document, knowledg
     ExtractCourseDescriptions(document, courses)
 
     for course in courses:
-        if course.getDescription() == "":
+        if course.getDescription().strip() == "":
+            courseTitle = course.getTitle().strip()
+            courseTitle = courseTitle.replace("New!", "").replace("*", "").replace("'","").strip()
+
             pNumber = 0
             takeDescription = 0
             descriptionElements = []
 
             for p in document.paragraphs:
                 pNumber += 1
+                    
                 if p.style.name in courseNameStyles and p.text != "":
-                    pText = p.text.replace("New! ", "").replace("*", "").strip()
-                    if p.text.__contains__(course.getTitle()) or course.getTitle().__contains__(pText):
+                    pText = p.text.replace("New! ", "").replace("*", "").replace("'","").strip()
+                    if pText.__contains__(courseTitle) or courseTitle.__contains__(pText):
                         takeDescription = 1
                     else:
-                        if takeDescription == 1 and p.text.strip().__contains__("Sessions"):
-                            takeDescription = 1
-                        if takeDescription == 1 and p.text.strip().__contains__("Magic"):
-                            takeDescription = 1
-                        else:
-                            takeDescription = 0
+                        takeDescription = 0
 
                 if p.style.name == constant.STYLE_BODY_TEXT and takeDescription == 1:
+                    #print("taking {} as course description for course: {}".format(p.text.strip(), course.getTitle()))
                     descriptionElements.append(p.text.strip())
 
             fullDescription = course.getDescription()
@@ -374,6 +374,9 @@ def ExtractCourseAndDescription(firebase: firebase, document: Document, knowledg
             course.setDescription(fullDescription)
 
     for course in courses:
+        if course.getDescription().strip() == "":
+            print("course: {} has no description".format(course.getTitle()))
+
         if course.getKnowledgeArea() == course.getTitle():
             continue
 
@@ -399,11 +402,16 @@ def HeaderIsCourseTitle(candidate: str) -> bool:
     """
 
     candidate = candidate.replace("New!", "").replace("*", "").strip()
+    candidate = candidate.replace("'","").strip()
+
 
     for course in courses:
 
         compareThis = []
         courseTitle = course.getTitle().strip()
+        courseTitle = courseTitle.replace("New!", "").replace("*", "").strip()
+        courseTitle = courseTitle.replace("'","").strip()
+
         lastPos = len(courseTitle)
 
         if courseTitle != "":
@@ -429,6 +437,23 @@ def HeaderIsCourseTitle(candidate: str) -> bool:
                     for titlePart in compareThis:
                         if titlePart in candidate:
                             return True
+                        if candidate in titlePart:
+                            return True
+
+            courseTitlePostCol = ""
+            candidatePostCol = ""
+            lastCandidatePos = len(candidate)
+
+            if courseTitle.__contains__(":") and courseTitle[lastPos-1] != ":":
+                (key, value) = courseTitle.split(':', 1)
+                courseTitlePostCol =value.strip()
+
+            if candidate.__contains__(":") and candidate[lastCandidatePos-1] != ":":
+                (key, value) = candidate.split(':', 1)
+                candidatePostCol =value.strip()
+
+            if candidatePostCol == courseTitlePostCol:
+                return True
 
     return False
 
@@ -444,16 +469,24 @@ def GetAssociatedCourse(courses: List[Course], candidate: str) -> Course:
 
     """
 
-    candidate = candidate.replace("New! ", "").replace("*", "").strip()
+    maybeCourseTitle = ""
+    maybeCourseTitle = candidate.replace("*","").replace("'","").strip()
 
     for course in courses:
 
         compareThis = []
         courseTitle = course.getTitle().strip()
+        courseTitle = courseTitle.replace("New!", "").replace("*", "").replace("'","").strip()
         lastPos = len(courseTitle)
 
         if courseTitle != "":
 
+            #if courseTitle.lower().__contains__("culinary"):
+                #print("inside GetAssociatedCourse with candidate: {} and courseTitle: {}".format(maybeCourseTitle.replace("'",""), courseTitle))
+            
+            if maybeCourseTitle.lower().replace("'", "") == courseTitle.lower().replace("'", ""):
+                return course
+            
             if courseTitle.__contains__(":") and courseTitle[lastPos-1] != ":":
                 (key, value) = courseTitle.split(':', 1)
                 compareThis.append(key.strip())
@@ -462,8 +495,24 @@ def GetAssociatedCourse(courses: List[Course], candidate: str) -> Course:
             else:
                 compareThis.append(courseTitle)
 
-            if any(ele in candidate for ele in compareThis):
+            if any(ele in maybeCourseTitle for ele in compareThis):
                 return course
+
+            courseTitlePostCol = ""
+            candidatePostCol = ""
+            lastCandidatePos = len(candidate)
+
+            if courseTitle.__contains__(":") and courseTitle[lastPos-1] != ":":
+                (key, value) = courseTitle.split(':', 1)
+                courseTitlePostCol =value.strip()
+
+            if candidate.__contains__(":") and candidate[lastCandidatePos-1] != ":":
+                (key, value) = candidate.split(':', 1)
+                candidatePostCol =value.strip()
+
+            if candidatePostCol == courseTitlePostCol:
+                return course                
+
 
     nullCourse = Course()
     nullCourse.setKnowledgeArea = "No Match"
@@ -488,7 +537,7 @@ def ExtractCourseDescriptions(document: Document, courses: List[Course]) -> None
     pertinentParagraphs = []
     number = 0
     pHeader = ""
-    headerIsCourseTitle = False
+    hIsCourseTitle = False
     partialTitle = []
 
     global courseNameStyles
@@ -527,9 +576,9 @@ def ExtractCourseDescriptions(document: Document, courses: List[Course]) -> None
                 paragraphs2.append(p2)
                 pHeader = pPrev.getText().strip()
                 if pHeader != "":
-                    headerIsCourseTitle = HeaderIsCourseTitle(pHeader)
+                    hIsCourseTitle = HeaderIsCourseTitle(pHeader)
 
-            if headerIsCourseTitle:
+            if hIsCourseTitle:
                 number = number + 1
                 pc = Paragraph()
                 pc.setNumber(number)
@@ -543,6 +592,9 @@ def ExtractCourseDescriptions(document: Document, courses: List[Course]) -> None
     courseTitlePosition = -1
 
     for i, p in enumerate(pertinentParagraphs):
+        #if p.getHeader().strip() != "":
+            #print("paragraph header: {}".format(p.getHeader().strip()))
+            
         if p.getHeader().strip() != "" and courseDescriptionOn and i > courseTitlePosition:
             associatedCourse.setDescription(currentCourseDescription)
             courseDescriptionOn = False
@@ -550,7 +602,7 @@ def ExtractCourseDescriptions(document: Document, courses: List[Course]) -> None
             courseTitlePosition = -1
         if p.getHeader().strip() != "" and not courseDescriptionOn:
             courseDescriptionOn = True
-            associatedCourse = GetAssociatedCourse(courses, p.getHeader().strip())
+            associatedCourse = GetAssociatedCourse(courses, p.getHeader().replace("'","").strip())
             courseTitlePosition = i
             currentCourseDescription += p.getText().strip()
         if courseDescriptionOn and i > courseTitlePosition:
@@ -643,8 +695,8 @@ if __name__ == "__main__":
     start_time = time.strftime("%H:%M:%S", tStart)
     print("Current Time: {}".format(start_time))
     t0 = time.time()
-    
-    
+
+
     print("Check database for existing Catalog Records.")
     GetExistingCatalogRecords(firebase, documentName, documentSemester, documentYear)
 
@@ -660,21 +712,21 @@ if __name__ == "__main__":
 
     print("Extract Courses and Descriptions from the current document.")
     ExtractCourseAndDescription(firebase, document, knowledgeAreas, courses, catalogId)
-    
+
     print("Extract stated Learning Objectives from the current document.")
     ExtractLearningOutcomes(firebase, document, courses)
-    
+
     print("Write the extracted Learning Objectives to the Database.")
     WriteLearningOutcomes(firebase, learningObjectives)
-    
+
     tEnd = time.localtime()
     end_time = time.strftime("%H:%M:%S", tEnd)
     print("Current Time: {}".format(end_time))
-    
+
     t1 = time.time()
-    
+
     tElapsed = t1 - t0
-    
+
     print("Time elapsed in seconds: {} ".format(tElapsed))
-    
-    
+
+
