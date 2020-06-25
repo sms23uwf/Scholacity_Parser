@@ -53,10 +53,48 @@ def GetKnowledgeAreas(firebase: firebase) -> None:
         knowledgeAreas.append(knowledgeArea)
 
 
-def ApplyModificationToDatabase(firebase: firebase, courseId: str, loId: str, modification: str) -> None:
+def ApplyCourseTitleModificationToDatabase(firebase: firebase, courseId: str, titleModification: str) -> None:
     """
 
-        Thos method will receive the courseId, the learningObjectiveId,
+        This method will receive the courseId and the intended modifications and apply the changes to the database.
+
+        :param firebase: a firebase connection
+        :param courseId: str
+        :param titleModification: str
+        :param descriptionModification: str
+
+    """
+
+    print("courseId: {}, titleModification: {}".format(courseId, titleModification))
+
+    if titleModification.strip() != "":
+        updateLocation = "Course" + "/" + courseId
+        firebase.put(updateLocation, 'Name', titleModification)
+
+
+def ApplyCourseDescriptionModificationToDatabase(firebase: firebase, courseId: str, descriptionModification: str) -> None:
+    """
+
+        This method will receive the courseId and the intended modifications and apply the changes to the database.
+
+        :param firebase: a firebase connection
+        :param courseId: str
+        :param titleModification: str
+        :param descriptionModification: str
+
+    """
+
+    print("courseId: {}, descriptionModification: {}".format(courseId, descriptionModification))
+
+    if descriptionModification.strip() != "":
+        updateLocation = "Course" + "/" + courseId
+        firebase.put(updateLocation, 'Description', descriptionModification)
+
+
+def ApplyLOModificationToDatabase(firebase: firebase, courseId: str, loId: str, modification: str) -> None:
+    """
+
+        This method will receive the courseId, the learningObjectiveId,
         and the intended modification and apply the change to the database.
 
         :param firebase: a firebase connection
@@ -83,7 +121,38 @@ def ApplyModificationToDatabase(firebase: firebase, courseId: str, loId: str, mo
             firebase.put(updateLocation, 'Text', modification)
 
 
-def IterateSheets(firebase: firebase) -> None:
+def ProcessCoursesWorksheet(firebase: firebase) -> None:
+    """
+
+        This method will iterate through the rows in the Courses worksheet
+        and call a method to make any indicated modifications to the database.
+
+        :param firebase: a firebase connection
+
+    """
+
+    global workbook
+
+    column_courseId = 1
+    column_TitleModification = 3
+    column_DescriptionModification = 5
+
+    ws = workbook.sheet_by_index(0)
+
+    for row_idx in range(1, ws.nrows):
+        courseId = str(ws.cell(row_idx, column_courseId).value)
+        titleModification = str(ws.cell(row_idx, column_TitleModification).value)
+        descriptionModification = str(ws.cell(row_idx, column_DescriptionModification).value)
+
+
+        if titleModification.strip() != "":
+            ApplyCourseTitleModificationToDatabase(firebase, courseId, titleModification)
+
+        if descriptionModification.strip() != "":
+            ApplyCourseDescriptionModificationToDatabase(firebase, courseId, descriptionModification)
+
+
+def IterateKnowledgeAreaSheets(firebase: firebase) -> None:
     """
 
         This method will iterate through all of the worksheets in the workbook
@@ -109,9 +178,10 @@ def IterateSheets(firebase: firebase) -> None:
             modification = str(ws.cell(row_idx, column_modification).value)
 
             if modification.strip() != "":
-                ApplyModificationToDatabase(firebase, courseId, loId, modification)
+                ApplyLOModificationToDatabase(firebase, courseId, loId, modification)
 
 
 if __name__ == "__main__":
     GetKnowledgeAreas(firebase)
-    IterateSheets(firebase)
+    ProcessCoursesWorksheet(firebase)
+    #IterateKnowledgeAreaSheets(firebase)

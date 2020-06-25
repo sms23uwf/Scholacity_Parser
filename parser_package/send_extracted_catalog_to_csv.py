@@ -26,6 +26,7 @@ courses = []
 learningObjectives = []
 
 workbook = xlsxwriter.Workbook('../outputs/Course_Catalog_Review.xlsx')
+coursesWsRow = 0
 
 
 def GetKnowledgeAreas(firebase: firebase) -> None:
@@ -117,6 +118,80 @@ def GetLearningObjectives(firebase: firebase) -> None:
         lo.setText(result[i]['Text'])
         learningObjectives.append(lo)
 
+def writeCourseesWorksheet(wb: xlsxwriter.Workbook) -> None:
+    """
+
+        Write a separate worksheet for all courses.
+
+        :param wb: Excel Workbook Object
+
+    """
+
+    global knowledgeAreas
+    global coursesWsRow
+
+
+    ws = wb.add_worksheet()
+    ws.name = "Courses"
+
+    row = coursesWsRow
+    col = 0
+
+    ws.write(row, col, 'LearningObjective')
+    col += 1
+
+    ws.write(row, col, 'CourseId')
+    col += 1
+
+    ws.write(row, col, 'CourseTitle - As Extracted')
+    col += 1
+
+    ws.write(row, col, 'CourseTitle - As Revised')
+    col += 1
+
+    ws.write(row, col, 'CourseDescription - As Extracted')
+    col += 1
+
+    ws.write(row, col, 'CourseDescription - As Revised')
+
+    coursesWsRow += 1
+    col = 0
+
+    for knowledgeArea in knowledgeAreas:
+        writeCourseRows(ws, knowledgeArea)
+
+
+def writeCourseRows(ws: xlsxwriter.worksheet, knowledgeArea: KnowledgeArea) -> None:
+    """
+
+        Write the rows in the courses worksheet for all courses under
+        the knowledgearea.
+
+        :param ws: Excel Worksheet Object
+        :param knowledgeArea: KnowledgeArea
+
+    """
+
+    global courses
+    global coursesWsRow
+
+    col = 0
+    knowledgeAreaId = knowledgeArea.getId()
+
+    for course in courses:
+        if str(course.getKnowledgeAreaId()) == str(knowledgeAreaId):
+            ws.write(coursesWsRow, col, knowledgeArea.getText())
+            col += 1
+
+            courseId = course.getId()
+            ws.write(coursesWsRow, col, courseId)
+            col += 1
+            ws.write(coursesWsRow, col, course.getTitle())
+            col += 2
+            ws.write(coursesWsRow, col, course.getDescription())
+            coursesWsRow += 1
+            col = 0
+
 
 def writeKnowledgeAreaWorksheets(wb: xlsxwriter.Workbook) -> None:
     """
@@ -137,7 +212,7 @@ def writeKnowledgeAreaWorksheets(wb: xlsxwriter.Workbook) -> None:
         writeWorksheet(ws, knowledgeArea)
 
 
-def writeWorksheet(ws, knowledgeArea):
+def writeWorksheet(ws: xlsxwriter.worksheet, knowledgeArea: KnowledgeArea) -> None:
     """
 
         Iterate through the global collection of KnowledgeAreas
@@ -158,15 +233,6 @@ def writeWorksheet(ws, knowledgeArea):
     col += 1
 
     ws.write(row, col, 'CourseTitle - As Extracted')
-    col += 1
-
-    ws.write(row, col, 'CourseTitle - As Revised')
-    col += 1
-
-    ws.write(row, col, 'CourseDescription - As Extracted')
-    col += 1
-
-    ws.write(row, col, 'CourseDescription - As Revised')
     col += 1
 
     ws.write(row, col, 'learningObjectiveId')
@@ -190,16 +256,12 @@ def writeWorksheet(ws, knowledgeArea):
                 ws.write(row, col, courseId)
                 col += 1
                 ws.write(row, col, course.getTitle())
-                col += 2
-                ws.write(row, col, course.getDescription())
                 row += 1
                 col = 0
                 # write another row for the course to allow for 2 learning outcomes
                 ws.write(row, col, courseId)
                 col += 1
                 ws.write(row, col, course.getTitle())
-                col += 2
-                ws.write(row, col, course.getDescription())
                 row += 1
                 col = 0
                 continue
@@ -211,9 +273,7 @@ def writeWorksheet(ws, knowledgeArea):
                         ws.write(row, col, courseId)
                         col += 1
                         ws.write(row, col, course.getTitle())
-                        col += 2
-                        ws.write(row, col, course.getDescription())
-                        col += 2
+                        col += 1
                         ws.write(row, col, learningObjective.getId())
                         col += 1
                         ws.write(row, col, learningObjective.getText())
@@ -226,6 +286,7 @@ if __name__ == "__main__":
     GetKnowledgeAreas(firebase)
     GetCourses(firebase)
     GetLearningObjectives(firebase)
-    
+
+    writeCourseesWorksheet(workbook)
     writeKnowledgeAreaWorksheets(workbook)
     workbook.close()
