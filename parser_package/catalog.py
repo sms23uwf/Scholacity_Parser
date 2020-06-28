@@ -1,10 +1,12 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-Created on Fri Jun  5 16:52:05 2020
+    catalog.py
+    --------------
 
-@author: claudiasatterfield
+    The Catalog class represents a Catalog record in the database.
+
 """
+
+__author__ = "Steven M. Satterfield"
 
         
 class Catalog:

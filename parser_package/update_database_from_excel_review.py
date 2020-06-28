@@ -18,7 +18,7 @@ from firebase import firebase
 from knowledgearea import KnowledgeArea
 
 
-firebase = firebase.FirebaseApplication('https://scholacity-org-test.firebaseio.com/')
+firebase = firebase.FirebaseApplication('https://scholacity-org.firebaseio.com/')
 
 knowledgeAreas = []
 
@@ -38,7 +38,7 @@ def GetKnowledgeAreas(firebase: firebase) -> None:
 
     obj_key_list = []
 
-    result = firebase.get('/KnowledgeArea', None)
+    result = firebase.get('/knowledgearea', None)
 
     if result is None:
         return
@@ -48,7 +48,7 @@ def GetKnowledgeAreas(firebase: firebase) -> None:
 
     for i in obj_key_list:
         knowledgeArea = KnowledgeArea()
-        knowledgeArea.setText(result[i]['Content'])
+        knowledgeArea.setText(result[i]['content'])
         knowledgeArea.setId(i)
         knowledgeAreas.append(knowledgeArea)
 
@@ -68,8 +68,8 @@ def ApplyCourseTitleModificationToDatabase(firebase: firebase, courseId: str, ti
     print("courseId: {}, titleModification: {}".format(courseId, titleModification))
 
     if titleModification.strip() != "":
-        updateLocation = "Course" + "/" + courseId
-        firebase.put(updateLocation, 'Name', titleModification)
+        updateLocation = "course" + "/" + courseId
+        firebase.put(updateLocation, 'name', titleModification)
 
 
 def ApplyCourseDescriptionModificationToDatabase(firebase: firebase, courseId: str, descriptionModification: str) -> None:
@@ -87,11 +87,11 @@ def ApplyCourseDescriptionModificationToDatabase(firebase: firebase, courseId: s
     print("courseId: {}, descriptionModification: {}".format(courseId, descriptionModification))
 
     if descriptionModification.strip() != "":
-        updateLocation = "Course" + "/" + courseId
-        firebase.put(updateLocation, 'Description', descriptionModification)
+        updateLocation = "course" + "/" + courseId
+        firebase.put(updateLocation, 'description', descriptionModification)
 
 
-def ApplyLOModificationToDatabase(firebase: firebase, courseId: str, loId: str, modification: str) -> None:
+def ApplyLOModificationToDatabase(firebase: firebase, knowledgeAreaId: str, courseId: str, loId: str, modification: str) -> None:
     """
 
         This method will receive the courseId, the learningObjectiveId,
@@ -107,17 +107,18 @@ def ApplyLOModificationToDatabase(firebase: firebase, courseId: str, loId: str, 
     if loId.strip() == "-" or loId.strip() == "":
 
         newLearningObjective = {
-            'CourseId': courseId,
-            'Text': modification
+            'courseid': courseId,
+            'knowledgeareaid': knowledgeAreaId,
+            'content': modification
         }
-        firebase.post('LearningObjective', newLearningObjective)
+        firebase.post('learningobjective', newLearningObjective)
 
     else:
 
         if modification.strip().lower() == "remove":
-            firebase.delete('LearningObjective', loId)
+            firebase.delete('learningobjective', loId)
         else:
-            updateLocation = "LearningObjective" + "/" + loId
+            updateLocation = "learningobjective" + "/" + loId
             firebase.put(updateLocation, 'Text', modification)
 
 
@@ -171,6 +172,7 @@ def IterateKnowledgeAreaSheets(firebase: firebase) -> None:
 
     for knowledgeArea in knowledgeAreas:
         ws = workbook.sheet_by_name(knowledgeArea.getText()[0:31])
+        knowledgeAreaId = knowledgeArea.getId()
 
         for row_idx in range(1, ws.nrows):
             courseId = str(ws.cell(row_idx, column_courseId).value)
@@ -178,7 +180,7 @@ def IterateKnowledgeAreaSheets(firebase: firebase) -> None:
             modification = str(ws.cell(row_idx, column_modification).value)
 
             if modification.strip() != "":
-                ApplyLOModificationToDatabase(firebase, courseId, loId, modification)
+                ApplyLOModificationToDatabase(firebase, knowledgeAreaId, courseId, loId, modification)
 
 
 if __name__ == "__main__":

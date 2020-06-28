@@ -23,6 +23,7 @@ from catalog import Catalog
 from knowledgearea import KnowledgeArea
 from course import Course
 from learningobjective import LearningObjective
+from learningobjective_course import LearningObjective_course
 from paragraph import Paragraph
 import constant
 import time
@@ -33,7 +34,7 @@ firstPositionOfCKA = 0
 currentKnowledgeArea = KnowledgeArea()
 courseNameStyles = [constant.STYLE_NORMAL, constant.STYLE_HEADING]
 
-firebase = firebase.FirebaseApplication('https://scholacity-org-test.firebaseio.com/')
+firebase = firebase.FirebaseApplication('https://scholacity-org.firebaseio.com/')
 
 document = Document('../Catalogs/Fall2019_LLFullCatalog.docx')
 documentName = "Fall2019_LLFullCatalog.docx"
@@ -123,7 +124,7 @@ def GetExistingCatalogRecords(firebase: firebase, documentName: str, documentSem
 
     obj_key_list = []
 
-    result = firebase.get('/Catalog', None)
+    result = firebase.get('/catalog', None)
 
     if result is None:
         return
@@ -165,7 +166,7 @@ def ExtractCatalogRecord(firebase: firebase, documentName: str, documentSemester
             'semester': documentSemester,
             'year': documentYear
         }
-        result = firebase.post('Catalog', newCatalogRecord)
+        result = firebase.post('catalog', newCatalogRecord)
         catalog.setId(result.get("name"))
     else:
         catalog.setId(existingKey)
@@ -205,7 +206,7 @@ def GetExistingKnowledgeAreas(firebase: firebase, document: Document) -> None:
 
     obj_key_list = []
 
-    result = firebase.get('/KnowledgeArea', None)
+    result = firebase.get('/knowledgearea', None)
 
     if result is None:
         return
@@ -215,7 +216,7 @@ def GetExistingKnowledgeAreas(firebase: firebase, document: Document) -> None:
 
     for i in obj_key_list:
         knowledgeArea = KnowledgeArea()
-        knowledgeArea.setText(result[i]['Content'])
+        knowledgeArea.setText(result[i]['content'])
         knowledgeArea.setId(i)
         existingKnowledgeAreas.append(knowledgeArea)
 
@@ -252,13 +253,13 @@ def ExtractKnowledgeAreas(firebase: firebase, document: Document, knowledgeAreas
 
     for knowledgeArea in knowledgeAreas:
         newKnowledgeArea = {
-            'Content': knowledgeArea.getText()
+            'content': knowledgeArea.getText()
         }
 
         existingKey = FindExistingKnowledgeAreaId(knowledgeArea)
 
         if existingKey == "":
-            result = firebase.post('KnowledgeArea', newKnowledgeArea)
+            result = firebase.post('knowledgearea', newKnowledgeArea)
             knowledgeArea.setId(result.get("name"))
         else:
             knowledgeArea.setId(existingKey)
@@ -381,12 +382,12 @@ def ExtractCourseAndDescription(firebase: firebase, document: Document, knowledg
             continue
 
         newCourse = {
-            'CatalogId': catalogId,
-            'KnowledgeAreaId': course.getKnowledgeAreaId(),
-            'Name': course.getTitle(),
-            'Description': course.getDescription()
+            'catalogid': catalogId,
+            'knowledgeareaid': course.getKnowledgeAreaId(),
+            'name': course.getTitle(),
+            'description': course.getDescription()
         }
-        result = firebase.post('Course', newCourse)
+        result = firebase.post('course', newCourse)
         course.setId(result)
 
 
@@ -667,28 +668,50 @@ def ExtractLearningOutcomes(firebase: firebase, document: Document, courses: Lis
                 lo = LearningObjective()
                 lo.setCourseId(courseId.get("name"))
                 lo.setText(candidateLO)
+                lo.setKnowledgeAreaId(course.getKnowledgeAreaId())
                 learningObjectives.append(lo)
 
 
-def WriteLearningOutcomes(firebase: firebase, learningObjectives) -> None:
+def WriteLearningOutcomes(firebase: firebase, learningObjectives: List[LearningObjective]) -> None:
     """
 
         Write the LearningObjectives captured in the global list
         to the database.
 
         :param firebase: firebase Database Connection
-        :param learningObjectives: LearningObjective object
+        :param learningObjectives: LearningObjective object list
 
     """
 
     for learningObjective in learningObjectives:
         newLearningObjective = {
-            'CourseId': learningObjective.getCourseId(),
-            'Text': learningObjective.getText()
+            'courseid': learningObjective.getCourseId(),
+            'content': learningObjective.getText(),
+            'knowledgeareaid': learningObjective.getKnowledgeAreaId()
         }
-        firebase.post('LearningObjective', newLearningObjective)
+        result = firebase.post('learningobjective', newLearningObjective)
+        learningObjective.setId(result.get("name"))
+        
 
+def WriteLearningOutcome_Course_Records(firebase: firebase, learningObjectives: List[LearningObjective]) -> None:
+    """
+        
+        Write the learningobjective_course bridge table
+        
+        :param firebase: firebase Database Connection
+        :param learningObjectives: LearningObjective object list
 
+    """
+
+    for learningObjective in learningObjectives:
+        newLearningObjective_Course = {
+            'courseid': learningObjective.getCourseId(),
+            'learningobjectiveid': learningObjective.getId()
+        }
+        firebase.post('learningobjective_course', newLearningObjective_Course)
+    
+    
+    
 if __name__ == "__main__":
 
     tStart = time.localtime()
@@ -698,14 +721,14 @@ if __name__ == "__main__":
 
 
     print("Check database for existing Catalog Records.")
-    GetExistingCatalogRecords(firebase, documentName, documentSemester, documentYear)
+    #GetExistingCatalogRecords(firebase, documentName, documentSemester, documentYear)
 
     print("Extract Catalog Record from current document.")
     catalog = ExtractCatalogRecord(firebase, documentName, documentSemester, documentYear)
     catalogId = catalog.getId()
 
     print("Check database for existing Knowledge Areas.")
-    GetExistingKnowledgeAreas(firebase, document)
+    #GetExistingKnowledgeAreas(firebase, document)
 
     print("Extract Knowledge Areas from the current document.")
     ExtractKnowledgeAreas(firebase, document, knowledgeAreas)
@@ -719,6 +742,9 @@ if __name__ == "__main__":
     print("Write the extracted Learning Objectives to the Database.")
     WriteLearningOutcomes(firebase, learningObjectives)
 
+    print("Write the LearningObjective_Course bridge table.")
+    WriteLearningOutcome_Course_Records(firebase, learningObjectives)
+    
     tEnd = time.localtime()
     end_time = time.strftime("%H:%M:%S", tEnd)
     print("Current Time: {}".format(end_time))

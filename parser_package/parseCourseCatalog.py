@@ -6,18 +6,19 @@ Created on Sun Jan 19 12:35:02 2020
 @author: Steve Satterfield
 """
 
+__author__ = "Steven M. Satterfield"
+
+
 import csv
-import constant
+import parser_package.constant
 from docx import Document
 from textblob import TextBlob
 
-import course
-from course import Course
-import paragraph
+from parser_package.course import Course
 
 import string
-from paragraph import Paragraph
-from paragraph import Run
+from parser_package.paragraph import Paragraph
+from parser_package.paragraph import Run
 import re
 import xlsxwriter
 import nltk

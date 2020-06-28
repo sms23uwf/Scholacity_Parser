@@ -19,7 +19,7 @@ from learningobjective import LearningObjective
 from course import Course
 
 
-firebase = firebase.FirebaseApplication('https://scholacity-org-test.firebaseio.com/')
+firebase = firebase.FirebaseApplication('https://scholacity-org.firebaseio.com/')
 
 knowledgeAreas = []
 courses = []
@@ -42,7 +42,7 @@ def GetKnowledgeAreas(firebase: firebase) -> None:
 
     obj_key_list = []
 
-    result = firebase.get('/KnowledgeArea', None)
+    result = firebase.get('/knowledgearea', None)
 
     if result is None:
         return
@@ -70,7 +70,7 @@ def GetCourses(firebase: firebase) -> None:
     global courses
     obj_key_list = []
 
-    result = firebase.get('/Course', None)
+    result = firebase.get('/course', None)
 
     if result is None:
         return
@@ -81,10 +81,10 @@ def GetCourses(firebase: firebase) -> None:
     for i in obj_key_list:
         course = Course()
         course.setId(i)
-        course.setKnowledgeAreaId(result[i]['KnowledgeAreaId'])
-        course.setCatalogId(result[i]['CatalogId'])
-        course.setTitle(result[i]['Name'])
-        course.setDescription(result[i]['Description'])
+        course.setKnowledgeAreaId(result[i]['knowledgeareaid'])
+        course.setCatalogId(result[i]['catalogid'])
+        course.setTitle(result[i]['name'])
+        course.setDescription(result[i]['description'])
         courses.append(course)
 
 
@@ -103,7 +103,7 @@ def GetLearningObjectives(firebase: firebase) -> None:
     global learningObjectives
     obj_key_list = []
 
-    result = firebase.get('/LearningObjective', None)
+    result = firebase.get('/learningobjective', None)
 
     if result is None:
         return
@@ -114,8 +114,8 @@ def GetLearningObjectives(firebase: firebase) -> None:
     for i in obj_key_list:
         lo = LearningObjective()
         lo.setId(i)
-        lo.setCourseId(result[i]['CourseId'])
-        lo.setText(result[i]['Text'])
+        lo.setCourseId(result[i]['courseid'])
+        lo.setText(result[i]['content'])
         learningObjectives.append(lo)
 
 def writeCourseesWorksheet(wb: xlsxwriter.Workbook) -> None:

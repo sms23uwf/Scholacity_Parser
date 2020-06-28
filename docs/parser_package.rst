@@ -52,6 +52,14 @@ parser\_package.learningobjective module
    :undoc-members:
    :show-inheritance:
 
+parser\_package.learningobjective\_course module
+------------------------------------------------
+
+.. automodule:: parser_package.learningobjective_course
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 parser\_package.paragraph module
 --------------------------------
 

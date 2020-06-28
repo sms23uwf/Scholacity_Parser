@@ -1,10 +1,13 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-Created on Mon Jan 20 11:51:06 2020
+    courses.py
+    --------------
 
-@author: claudiasatterfield
+    The Courses class represents a collection of Course objects.
+
 """
+
+__author__ = "Steven M. Satterfield"
+
 
 class CourseIterator:
     def __init__(self, courses):

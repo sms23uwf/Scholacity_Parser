@@ -1,10 +1,14 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-Created on Mon Jan 20 18:25:35 2020
+    paragraph.py
+    --------------
 
-@author: Steven M. Satterfield
+    The paragraph class represents a paragraph as parsed by Python-docx.
+
 """
+
+__author__ = "Steven M. Satterfield"
+
+
 class Run:
     def __init__(self):
         self._font = ""
