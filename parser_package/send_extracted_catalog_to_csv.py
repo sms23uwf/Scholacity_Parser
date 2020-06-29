@@ -52,7 +52,7 @@ def GetKnowledgeAreas(firebase: firebase) -> None:
 
     for i in obj_key_list:
         knowledgeArea = KnowledgeArea()
-        knowledgeArea.setText(result[i]['Content'])
+        knowledgeArea.setText(result[i]['content'])
         knowledgeArea.setId(i)
         knowledgeAreas.append(knowledgeArea)
 

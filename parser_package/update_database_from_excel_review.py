@@ -16,11 +16,13 @@ import xlrd
 from firebase import firebase
 
 from knowledgearea import KnowledgeArea
-
+from learningobjective_course import LearningObjective_course
 
 firebase = firebase.FirebaseApplication('https://scholacity-org.firebaseio.com/')
 
+
 knowledgeAreas = []
+lo_courses = []
 
 workbook = xlrd.open_workbook('../inputs/Course_Catalog_Reviewed.xlsx')
 
@@ -51,6 +53,37 @@ def GetKnowledgeAreas(firebase: firebase) -> None:
         knowledgeArea.setText(result[i]['content'])
         knowledgeArea.setId(i)
         knowledgeAreas.append(knowledgeArea)
+
+
+def GetBridgeRecords(firebase: firebase) -> None:
+    """
+
+        Get the learningobjective_course recordas and
+        insert them into the global collection.
+
+        :param firebase: a firebase connection
+
+    """
+
+    global lo_courses
+
+    obj_key_list = []
+
+    result = firebase.get('/learningobjective_course', None)
+
+    if result is None:
+        return
+
+    for i in result.keys():
+        obj_key_list.append(i)
+
+    for i in obj_key_list:
+        learningobjective_course = LearningObjective_course()
+        learningobjective_course.setId(i)
+        learningobjective_course.setLearningObjectiveId(result[i]['learningobjectiveid'])
+        learningobjective_course.setCourseId(result[i]['courseid'])
+        lo_courses.append(learningobjective_course)
+
 
 
 def ApplyCourseTitleModificationToDatabase(firebase: firebase, courseId: str, titleModification: str) -> None:
@@ -91,6 +124,28 @@ def ApplyCourseDescriptionModificationToDatabase(firebase: firebase, courseId: s
         firebase.put(updateLocation, 'description', descriptionModification)
 
 
+def findKeyOfBridgeTableRecord(loId: str) -> str:
+    """
+    
+        find and return the key value for a bridge table
+        record for the provided learningobjectiveid
+        
+        :param loId: str
+        
+    """
+    
+    global lo_courses
+    
+    for bridgeRecord in lo_courses:
+        bridgeId = bridgeRecord.getId()
+        bridgeLoId = bridgeRecord.getLearningObjectiveId()
+        
+        if(bridgeLoId == loId):
+            return bridgeId
+        
+    return ""
+
+
 def ApplyLOModificationToDatabase(firebase: firebase, knowledgeAreaId: str, courseId: str, loId: str, modification: str) -> None:
     """
 
@@ -111,15 +166,33 @@ def ApplyLOModificationToDatabase(firebase: firebase, knowledgeAreaId: str, cour
             'knowledgeareaid': knowledgeAreaId,
             'content': modification
         }
-        firebase.post('learningobjective', newLearningObjective)
+        result = firebase.post('learningobjective', newLearningObjective)
+        newLoId = result.get("name")
+        
+        newBridgeRecord = {
+            'courseid': courseId,
+            'learningobjectiveid': newLoId
+        }
+        
+        firebase.post('learningobjective_course', newBridgeRecord)
+        
+        print("just added learningobjective: {}".format(modification))
 
     else:
 
         if modification.strip().lower() == "remove":
             firebase.delete('learningobjective', loId)
+            bridgeKey = findKeyOfBridgeTableRecord(loId)
+            
+            print("bridgeKey: {}".format(bridgeKey))
+            if bridgeKey.strip().__len__() > 0:
+                firebase.delete('learningobjective_course', bridgeKey)
+                
+
         else:
             updateLocation = "learningobjective" + "/" + loId
-            firebase.put(updateLocation, 'Text', modification)
+            firebase.put(updateLocation, 'content', modification)
+            print("just updated learningobjective: {}".format(modification))
 
 
 def ProcessCoursesWorksheet(firebase: firebase) -> None:
@@ -185,5 +258,6 @@ def IterateKnowledgeAreaSheets(firebase: firebase) -> None:
 
 if __name__ == "__main__":
     GetKnowledgeAreas(firebase)
+    GetBridgeRecords(firebase)
     ProcessCoursesWorksheet(firebase)
-    #IterateKnowledgeAreaSheets(firebase)
+    IterateKnowledgeAreaSheets(firebase)
