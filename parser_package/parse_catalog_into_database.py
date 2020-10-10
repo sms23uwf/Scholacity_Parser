@@ -32,14 +32,14 @@ existingCatalogRecords = []
 existingKnowledgeAreas = []
 firstPositionOfCKA = 0
 currentKnowledgeArea = KnowledgeArea()
-courseNameStyles = [constant.STYLE_NORMAL, constant.STYLE_HEADING]
+courseNameStyles = [constant.STYLE_NORMAL, constant.STYLE_HEADING, constant.STYLE_HEADING7]
 
 firebase = firebase.FirebaseApplication('https://scholacity-org.firebaseio.com/')
 
-document = Document('../Catalogs/Fall2019_LLFullCatalog.docx')
-documentName = "Fall2019_LLFullCatalog.docx"
+document = Document('../Catalogs/Fall2020_LLCatalog.docx')
+documentName = "Fall2020_LLCatalog.docx"
 documentSemester = "Fall"
-documentYear = "2019"
+documentYear = "2020"
 
 # document = Document('Spring2020_LeisureLearningCatalogFULL.docx')
 # documentName = "Spring2020_LeisureLearningCatalogFULL.docx"
@@ -106,7 +106,7 @@ def ParagraphIsKnowledgeArea(pdocument: Document, p: Paragraph, i: int, lastPos:
                     firstPositionOfCKA = i
 
                 return True, pPrevText
-
+        
     return False, ""
 
 
@@ -566,7 +566,7 @@ def ExtractCourseDescriptions(document: Document, courses: List[Course]) -> None
     for i, item in enumerate(allparagraphs):
         if item.getStyle() == constant.STYLE_BODY_TEXT:
             pPrev = allparagraphs[i-1]
-
+            
             pHeader = ""
             if pPrev.getStyle() in courseNameStyles:
                 number = number + 1

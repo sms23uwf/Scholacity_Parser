@@ -10,15 +10,15 @@ __author__ = "Steven M. Satterfield"
 
 
 import csv
-import parser_package.constant
+import constant
 from docx import Document
 from textblob import TextBlob
 
-from parser_package.course import Course
+from course import Course
 
 import string
-from parser_package.paragraph import Paragraph
-from parser_package.paragraph import Run
+from paragraph import Paragraph
+from paragraph import Run
 import re
 import xlsxwriter
 import nltk
@@ -43,10 +43,10 @@ paragraphs2 = []
 
 
 number = 0
-document = Document('../Catalogs/Fall2019_LLFullCatalog.docx')
-documentName = "Fall2019_LLFullCatalog.docx"
+document = Document('../Catalogs/Fall2020_LLCatalog.docx')
+documentName = "Fall2020_LLCatalog.docx"
 documentSemester = "Fall"
-documentYear = "2019"
+documentYear = "2020"
 
 
 #document = Document('Spring2020_LeisureLearningCatalogFULL.docx')

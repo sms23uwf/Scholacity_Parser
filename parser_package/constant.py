@@ -11,6 +11,7 @@ __author__ = "Steven M. Satterfield"
 
 STYLE_NORMAL = "Normal"
 STYLE_HEADING = "Heading 9"
+STYLE_HEADING7 = "Heading 7"
 STYLE_BODY_TEXT = "Body Text"
 
 BLOOM_ACTION_WORDS = ["learn","read","arrange","define","describe","duplicate","identify","label","list","match","memorize","name","order","outline",

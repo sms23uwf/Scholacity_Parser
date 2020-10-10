@@ -14,17 +14,53 @@ __author__ = "Steven M. Satterfield"
 
 import xlrd
 from firebase import firebase
+import datetime
+import time
 
+from catalog import Catalog
 from knowledgearea import KnowledgeArea
 from learningobjective_course import LearningObjective_course
 
 firebase = firebase.FirebaseApplication('https://scholacity-org.firebaseio.com/')
 
-
+catalogs = []
 knowledgeAreas = []
 lo_courses = []
+catalogId = ""
 
 workbook = xlrd.open_workbook('../inputs/Course_Catalog_Reviewed.xlsx')
+
+
+def GetCatalogRecords(firebase: firebase) -> None:
+    """
+        Get existing catalog records from database and insert into global collection.
+
+        :param firebase: a firebase connection
+
+    """
+
+    global catalogs
+    global catalogId
+
+    obj_key_list = []
+
+    result = firebase.get('/catalog', None)
+
+    if result is None:
+        return
+
+    for i in result.keys():
+        obj_key_list.append(i)
+        catalogId = i
+        
+
+    for i in obj_key_list:
+        catalog = Catalog()
+        catalog.setId(i)
+        catalog.setDocumentName(result[i]['document_name'])
+        catalog.setSemester(result[i]['semester'])
+        catalog.setYear(result[i]['year'])
+        catalogs.append(catalog)
 
 
 def GetKnowledgeAreas(firebase: firebase) -> None:
@@ -94,7 +130,6 @@ def ApplyCourseTitleModificationToDatabase(firebase: firebase, courseId: str, ti
         :param firebase: a firebase connection
         :param courseId: str
         :param titleModification: str
-        :param descriptionModification: str
 
     """
 
@@ -105,6 +140,43 @@ def ApplyCourseTitleModificationToDatabase(firebase: firebase, courseId: str, ti
         firebase.put(updateLocation, 'name', titleModification)
 
 
+def ApplyCourseInstructorModificationToDatabase(firebase: firebase, courseId: str, instructorModification: str) -> None:
+    """
+    
+
+        This method will receive the courseId and the intended modifications and apply the changes to the database.
+        
+        :param firebase: a firebase connection
+        :param courseId: str
+        :param instructorModification: str
+        
+    """
+    
+    print("courseId: {}, instructorModification: {}".format(courseId, instructorModification))
+
+    if instructorModification.strip() != "":
+        updateLocation = "course" + "/" + courseId
+        firebase.put(updateLocation, 'instructor', instructorModification)
+    
+    
+def ApplyCourseFeeModificationToDatabase(firebase: firebase, courseId: str, feeModification: float) -> None:
+    """
+    
+
+        This method will receive the courseId and the intended modifications and apply the changes to the database.
+        
+        :param firebase: a firebase connection
+        :param courseId: str
+        :param feeModification: int
+        
+    """
+    
+    print("courseId: {}, feeModification: {}".format(courseId, feeModification))
+
+    updateLocation = "course" + "/" + courseId
+    firebase.put(updateLocation, 'fee', feeModification)
+    
+    
 def ApplyCourseDescriptionModificationToDatabase(firebase: firebase, courseId: str, descriptionModification: str) -> None:
     """
 
@@ -112,7 +184,6 @@ def ApplyCourseDescriptionModificationToDatabase(firebase: firebase, courseId: s
 
         :param firebase: a firebase connection
         :param courseId: str
-        :param titleModification: str
         :param descriptionModification: str
 
     """
@@ -195,6 +266,112 @@ def ApplyLOModificationToDatabase(firebase: firebase, knowledgeAreaId: str, cour
             print("just updated learningobjective: {}".format(modification))
 
 
+def FindKnowledgeAreaId(KnowledgeAreaText: str) -> str:
+    """
+        Find existing KnowledgeArea in the global collection.
+        If found, get the Id.
+
+        :param newKnowledgeArea: a KnowledgeArea object
+
+        :return string representation of the Id
+
+    """
+
+    global knowledgeAreas
+
+    for KnowledgeArea in knowledgeAreas:
+        if KnowledgeArea.getText().strip().lower() == KnowledgeAreaText.strip().lower():
+            return KnowledgeArea.getId()
+
+    return ""
+
+
+def AddNewCourse(firebase: firebase, knowledgeArea: str, titleModification: str, descriptionModification: str, instructor: str, fee: float) -> None:
+    """
+        This method will add a new course under the knowledgeArea.
+        
+        :param firebase: a firebase connection
+        :param knowledgeArea: str
+        :param titleModification: str
+        :param descriptionModification: str
+ 
+    """
+
+    global catalogId
+    
+    knowledgeAreaId = FindKnowledgeAreaId(knowledgeArea)
+    
+    newCourse = {
+        'catalogid': catalogId,
+        'knowledgeareaid': knowledgeAreaId,
+        'name': titleModification,
+        'description': descriptionModification,
+        'instructor': instructor,
+        'fee': fee
+    }
+    result = firebase.post('course', newCourse)
+    
+
+def AddNewSession(firebase: firebase, courseId: str, session_number: int, DOW: str, session_date: datetime, session_time_start: str, session_time_end: str) -> None:
+    """
+        This method will add a new course under the knowledgeArea.
+        
+        :param firebase: a firebase connection
+        :param knowledgeArea: str
+        :param titleModification: str
+        :param descriptionModification: str
+ 
+    """
+
+    global catalogId
+    
+   
+    newSession = {
+        'courseid': courseId,
+        'session_number': session_number,
+        'DOW': DOW,
+        'session_date': session_date,
+        'session_time_start': session_time_start,
+        'session_time_end': session_time_end
+    }
+    result = firebase.post('session', newSession)
+
+
+def ProcessSessionsWorksheet(firebase: firebase) -> None:
+    """
+
+        This method will iterate through the rows in the Sessions worksheet
+        and call a method to make any indicated modifications to the database.
+
+        :param firebase: a firebase connection
+
+    """
+
+    global workbook
+
+    column_knowlegeArea = 0
+    column_courseId = 1
+    column_session_number = 3
+    column_DOW = 4
+    column_date = 5
+    column_time_start = 6
+    column_time_end = 7
+    
+    ws = workbook.sheet_by_index(1)
+    
+    for row_idx in range(1, ws.nrows):
+        knowledgeAreaText = str(ws.cell(row_idx, column_knowlegeArea).value)
+        courseId = str(ws.cell(row_idx, column_courseId).value)
+        session_number = int(ws.cell(row_idx, column_session_number).value)
+        DOW = str(ws.cell(row_idx, column_DOW).value)
+        session_date = xlrd.xldate_as_datetime((ws.cell(row_idx, column_date).value), workbook.datemode)
+        session_time_start = xlrd.xldate_as_datetime((ws.cell(row_idx, column_time_start).value), workbook.datemode)
+        session_time_end = xlrd.xldate_as_datetime((ws.cell(row_idx, column_time_end).value), workbook.datemode)
+    
+        AddNewSession(firebase, courseId, session_number, DOW, session_date, session_time_start, session_time_end)
+    
+    
+
 def ProcessCoursesWorksheet(firebase: firebase) -> None:
     """
 
@@ -207,25 +384,39 @@ def ProcessCoursesWorksheet(firebase: firebase) -> None:
 
     global workbook
 
+    column_knowlegeArea = 0
     column_courseId = 1
     column_TitleModification = 3
     column_DescriptionModification = 5
+    column_Instructor = 6
+    column_Fee = 7
 
     ws = workbook.sheet_by_index(0)
 
     for row_idx in range(1, ws.nrows):
+        knowledgeAreaText = str(ws.cell(row_idx, column_knowlegeArea).value)
         courseId = str(ws.cell(row_idx, column_courseId).value)
         titleModification = str(ws.cell(row_idx, column_TitleModification).value)
         descriptionModification = str(ws.cell(row_idx, column_DescriptionModification).value)
+        instructor = str(ws.cell(row_idx, column_Instructor).value)
+        fee = float(ws.cell(row_idx, column_Fee).value)
 
+        if courseId.strip() != "":
+            if titleModification.strip() != "":
+                ApplyCourseTitleModificationToDatabase(firebase, courseId, titleModification)
+    
+            if descriptionModification.strip() != "":
+                ApplyCourseDescriptionModificationToDatabase(firebase, courseId, descriptionModification)
+                
+            ApplyCourseInstructorModificationToDatabase(firebase, courseId, instructor)
+            ApplyCourseFeeModificationToDatabase(firebase, courseId, fee)
 
-        if titleModification.strip() != "":
-            ApplyCourseTitleModificationToDatabase(firebase, courseId, titleModification)
-
-        if descriptionModification.strip() != "":
-            ApplyCourseDescriptionModificationToDatabase(firebase, courseId, descriptionModification)
-
-
+        else:
+            print("ADDING NEW COURSE")
+            AddNewCourse(firebase, knowledgeAreaText, titleModification, descriptionModification, instructor, fee)
+            
+            
+            
 def IterateKnowledgeAreaSheets(firebase: firebase) -> None:
     """
 
@@ -257,7 +448,9 @@ def IterateKnowledgeAreaSheets(firebase: firebase) -> None:
 
 
 if __name__ == "__main__":
+    GetCatalogRecords(firebase)
     GetKnowledgeAreas(firebase)
     GetBridgeRecords(firebase)
-    ProcessCoursesWorksheet(firebase)
-    IterateKnowledgeAreaSheets(firebase)
+    #ProcessCoursesWorksheet(firebase)
+    ProcessSessionsWorksheet(firebase)
+    #IterateKnowledgeAreaSheets(firebase)
