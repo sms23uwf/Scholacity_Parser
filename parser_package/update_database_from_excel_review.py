@@ -314,12 +314,16 @@ def AddNewCourse(firebase: firebase, knowledgeArea: str, titleModification: str,
 
 def AddNewSession(firebase: firebase, courseId: str, session_number: int, DOW: str, session_date: datetime, session_time_start: str, session_time_end: str) -> None:
     """
-        This method will add a new course under the knowledgeArea.
+        This method will add a new session.
         
         :param firebase: a firebase connection
-        :param knowledgeArea: str
-        :param titleModification: str
-        :param descriptionModification: str
+        :param courseId: str
+        :param session_number: int
+        :param DOW: str
+        :param session_date: datetime
+        :param session_time_start: str
+        :param session_time_end: str
+        
  
     """
 
@@ -337,6 +341,27 @@ def AddNewSession(firebase: firebase, courseId: str, session_number: int, DOW: s
     result = firebase.post('session', newSession)
 
 
+
+def AddNewCourseDOW(firebase: firebase, DOW: str, courseId: str) -> None:
+    """
+    
+
+        This method will add a new course under the knowledgeArea.
+        
+        :param firebase: a firebase connection
+        :param DOW: str
+        :param courseId: str
+
+    """
+    
+    newCourseDOW = {
+        'DOW': DOW,
+        'courseid': courseId
+    }
+    result = firebase.post('courses_dow', newCourseDOW)
+    
+    
+    
 def ProcessSessionsWorksheet(firebase: firebase) -> None:
     """
 
@@ -369,6 +394,32 @@ def ProcessSessionsWorksheet(firebase: firebase) -> None:
         session_time_end = xlrd.xldate_as_datetime((ws.cell(row_idx, column_time_end).value), workbook.datemode)
     
         AddNewSession(firebase, courseId, session_number, DOW, session_date, session_time_start, session_time_end)
+    
+    
+    
+    
+def ProcessCoursesDOWWorksheet(firebase: firebase) -> None:
+    """
+
+        This method will iterate through the rows in the Courses_DOW worksheet
+        and call a method to make any indicated modifications to the database.
+
+        :param firebase: a firebase connection
+
+    """
+
+    global workbook
+
+    column_DOW = 0
+    column_courseId = 1
+    
+    ws = workbook.sheet_by_index(2)
+    
+    for row_idx in range(1, ws.nrows):
+        DOW = str(ws.cell(row_idx, column_DOW).value)
+        courseId = str(ws.cell(row_idx, column_courseId).value)
+    
+        AddNewCourseDOW(firebase, DOW, courseId)
     
     
 
@@ -452,5 +503,6 @@ if __name__ == "__main__":
     GetKnowledgeAreas(firebase)
     GetBridgeRecords(firebase)
     #ProcessCoursesWorksheet(firebase)
-    ProcessSessionsWorksheet(firebase)
+    #ProcessSessionsWorksheet(firebase)
+    ProcessCoursesDOWWorksheet(firebase)
     #IterateKnowledgeAreaSheets(firebase)
